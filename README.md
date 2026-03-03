@@ -20,27 +20,26 @@ Sub-commands (work standalone or within a session):
 ```
 /maetdol:gate "Add user authentication"    # Check ambiguity only
 /maetdol:unstuck                           # Break out of a stuck loop
+/maetdol:setup                             # Install and verify plugin
 ```
 
 ## Install
 
-```bash
-cd maetdol
-npm install
+### Claude Code Plugin (Recommended)
+
+```
+/plugin marketplace add https://github.com/mul501/maetdol
+/plugin install maetdol
+/maetdol:setup
 ```
 
-Add to your Claude Code MCP config or use as a plugin:
+### Development
 
-```json
-{
-  "mcpServers": {
-    "maetdol": {
-      "command": "npx",
-      "args": ["tsx", "src/server.ts"],
-      "cwd": "/path/to/maetdol"
-    }
-  }
-}
+```bash
+git clone https://github.com/mul501/maetdol
+cd maetdol
+npm install
+npm run dev
 ```
 
 ## MCP Tools
@@ -49,7 +48,7 @@ Add to your Claude Code MCP config or use as a plugin:
 |------|---------|
 | `maetdol_session` | Session lifecycle (create/get/resume/complete) |
 | `maetdol_tasks` | Task decomposition and dependency management |
-| `maetdol_score_ambiguity` | LLM-based ambiguity scoring |
+| `maetdol_score_ambiguity` | Ambiguity scoring (accepts pre-computed scores) |
 | `maetdol_ralph_iterate` | Per-task iteration tracking and stagnation detection |
 | `maetdol_detect_stagnation` | Hash-based spinning/oscillation pattern detection |
 

@@ -13,6 +13,18 @@ Triggered by: `/maetdol:gate "task description"`
 
 The argument is the task description to evaluate. If no argument is provided, use the most recent user message as the task description.
 
+## Scoring (Claude Code가 직접 수행)
+
+You must score the task yourself before calling the MCP tool. Evaluate the task on a 0.0–1.0 scale for each dimension:
+
+- **goal**: How clear is the end goal? (1.0 = completely unambiguous, 0.0 = no idea what to build)
+- **constraints**: How well-defined are the constraints and scope? (1.0 = fully bounded, 0.0 = wide open)
+- **criteria**: How measurable are the success criteria? (1.0 = objectively verifiable, 0.0 = "make it better")
+
+If any dimension scores below 0.7, generate clarifying questions for the `suggestions` array.
+
+After scoring, pass the scores to `maetdol_score_ambiguity` which computes the weighted ambiguity and gate pass/fail.
+
 ## Flow
 
 ### Round 1: Initial Scoring
@@ -20,8 +32,9 @@ The argument is the task description to evaluate. If no argument is provided, us
 1. Gather context:
    - The task description (from argument or conversation).
    - Relevant codebase context — use Read, Glob, Grep to understand the project structure if the task references specific code.
-2. Call `maetdol_score_ambiguity` with `{ context: "<assembled context>", round: 1 }`.
-3. Evaluate the response:
+2. Score the task yourself using the criteria above.
+3. Call `maetdol_score_ambiguity` with `{ context, round: 1, goal, constraints, criteria, suggestions }`.
+4. Evaluate the response:
    - **Passed:** Output the refined requirements. Done.
    - **Not passed:** Continue to clarification.
 
@@ -31,10 +44,11 @@ The argument is the task description to evaluate. If no argument is provided, us
 2. The interviewer asks the user pointed clarifying questions (scope, constraints, success criteria, edge cases).
 3. Collect the user's answers.
 4. Assemble updated context: original task + all Q&A so far.
-5. Call `maetdol_score_ambiguity` with `{ context: "<updated context>", round: <N> }`.
-6. **Passed:** Output refined requirements. Done.
-7. **Not passed and round < 3:** Go to step 1 of this section.
-8. **Not passed and round = 3:** Output the best requirements available. List remaining ambiguities as explicit assumptions.
+5. Re-score the task yourself with the new context.
+6. Call `maetdol_score_ambiguity` with `{ context: "<updated context>", round: <N>, goal, constraints, criteria, suggestions }`.
+7. **Passed:** Output refined requirements. Done.
+8. **Not passed and round < 3:** Go to step 1 of this section.
+9. **Not passed and round = 3:** Output the best requirements available. List remaining ambiguities as explicit assumptions.
 
 ### Output Format
 

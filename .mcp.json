@@ -3,7 +3,7 @@
     "maetdol": {
       "command": "npx",
       "args": ["tsx", "src/server.ts"],
-      "cwd": "."
+      "cwd": "${CLAUDE_PLUGIN_ROOT}"
     }
   }
 }
