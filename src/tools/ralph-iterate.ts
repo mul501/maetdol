@@ -8,6 +8,7 @@ import { redactSecrets } from '../lib/redact.js'
 const MAX_TASK_ITERATIONS = 5
 const MAX_SESSION_ITERATIONS = 30
 const STAGNATION_THRESHOLD = 3
+const MAX_EVIDENCE_LENGTH = 500
 
 export function registerRalphIterateTool(server: McpServer) {
   server.registerTool(
@@ -21,9 +22,11 @@ export function registerRalphIterateTool(server: McpServer) {
         error_hash: z.string().optional().describe('SHA-256 prefix (8 chars) of the error output'),
         error_summary: z.string().optional().describe('Human-readable error summary'),
         verify_result: z.enum(['pass', 'fail']).optional().describe('Result of the verification step for this iteration'),
+        evidence: z.string().max(MAX_EVIDENCE_LENGTH).optional().describe('Verification evidence (actual terminal output). Required when verify_result is "pass"'),
+        criteria_met: z.array(z.number()).optional().describe('Indices of acceptance_criteria verified this iteration'),
       },
     },
-    async ({ session_id, task_id, error_hash, error_summary, verify_result }) => {
+    async ({ session_id, task_id, error_hash, error_summary, verify_result, evidence, criteria_met }) => {
       const session = await loadSession(session_id)
       if (!session) return toolError(`Session ${session_id} not found`)
 
@@ -34,9 +37,25 @@ export function registerRalphIterateTool(server: McpServer) {
       const task = session.tasks.find((t) => t.id === task_id)
       if (!task) return toolError(`Task ${task_id} not found`)
 
-      // Record verification result
+      if (verify_result === 'pass' && !evidence) {
+        return toolError('evidence required when verify_result is "pass". Paste actual test/build output.')
+      }
+
       if (verify_result) {
         task.verify_result = verify_result
+      }
+
+      if (evidence) {
+        task.evidence = evidence
+      }
+
+      if (criteria_met) {
+        for (const idx of criteria_met) {
+          if (idx < 0 || idx >= task.acceptance_criteria.length) {
+            return toolError(`Invalid criteria_met index ${idx}. Task has ${task.acceptance_criteria.length} criteria (0-${task.acceptance_criteria.length - 1}).`)
+          }
+          task.criteria_results[String(idx)] = true
+        }
       }
 
       // Increment iteration
@@ -80,6 +99,7 @@ export function registerRalphIterateTool(server: McpServer) {
         consecutive_same_error: consecutiveSame,
         session_total_iterations: sessionTotal,
         verify_result: task.verify_result,
+        evidence: task.evidence,
       }
 
       return ok(result)

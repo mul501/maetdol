@@ -18,20 +18,32 @@ export function registerScoreAmbiguityTool(server: McpServer) {
         goal: z.number().min(0).max(1).describe('Goal clarity score (0.0=vague, 1.0=clear)'),
         constraints: z.number().min(0).max(1).describe('Constraints clarity score (0.0=vague, 1.0=clear)'),
         criteria: z.number().min(0).max(1).describe('Success criteria clarity score (0.0=vague, 1.0=clear)'),
+        context_clarity: z.number().min(0).max(1).default(0).describe('Context clarity: how well the task accounts for existing codebase patterns. Use 0.0 for round 1 (pre-exploration), score properly from round 2+.'),
         suggestions: z.array(z.string()).optional().describe('Clarifying questions if scores are low'),
         session_id: z.string().optional().describe('If provided, persist gate result to session'),
       },
     },
-    async ({ context, round, goal, constraints, criteria, suggestions, session_id }) => {
-      void round // schema-only: tracked by skill, not used in calculation
-      const clarity = goal * 0.4 + constraints * 0.3 + criteria * 0.3
+    async ({ context, round, goal, constraints, criteria, context_clarity, suggestions, session_id }) => {
+      // Round 1: ignore context (pre-exploration), use 3-dim formula
+      // Round 2+: include context clarity as 4th dimension
+      const useContext = round > 1
+      const clarity = useContext
+        ? goal * 0.35 + constraints * 0.25 + criteria * 0.25 + context_clarity * 0.15
+        : goal * 0.4 + constraints * 0.3 + criteria * 0.3
       const ambiguity = Math.round((1.0 - clarity) * 1000) / 1000
+
+      // Find weakest dimension (exclude context in round 1)
+      const scoreEntries: [keyof AmbiguityResult['breakdown'], number][] = useContext
+        ? [['goal', goal], ['constraints', constraints], ['criteria', criteria], ['context', context_clarity]]
+        : [['goal', goal], ['constraints', constraints], ['criteria', criteria]]
+      const weakest = scoreEntries.reduce((min, curr) => (curr[1] < min[1] ? curr : min))[0]
 
       const result: AmbiguityResult = {
         ambiguity,
-        breakdown: { goal, constraints, criteria },
+        breakdown: { goal, constraints, criteria, context: context_clarity },
         passed: ambiguity <= AMBIGUITY_THRESHOLD,
         suggestions: suggestions ?? [],
+        weakest_dimension: weakest,
       }
 
       if (session_id) {
@@ -44,7 +56,7 @@ export function registerScoreAmbiguityTool(server: McpServer) {
           rounds: [],
         }
         if (result.passed) {
-          session.phase = 'decompose'
+          session.phase = 'stories'
         }
         await saveSession(session)
       }

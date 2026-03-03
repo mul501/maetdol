@@ -43,6 +43,7 @@ export function registerSessionTool(server: McpServer) {
             task,
             phase: 'gate',
             gate: null,
+            stories: [],
             tasks: [],
             current_task_id: null,
             unstuck: { activations: 0, personas_used: [] },

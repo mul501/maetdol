@@ -20,10 +20,13 @@ You must score the task yourself before calling the MCP tool. Evaluate the task 
 - **goal**: How clear is the end goal? (1.0 = completely unambiguous, 0.0 = no idea what to build)
 - **constraints**: How well-defined are the constraints and scope? (1.0 = fully bounded, 0.0 = wide open)
 - **criteria**: How measurable are the success criteria? (1.0 = objectively verifiable, 0.0 = "make it better")
+- **context_clarity**: How well does the task account for existing codebase patterns? (1.0 = fully grounded, 0.0 = no codebase awareness)
+  - **Round 1**: `context_clarity: 0` 고정. 코드베이스 탐색 전이므로 채점하지 않음.
+  - **Round 2+**: 인터뷰어가 코드를 읽은 후 실제 채점. "기존 패턴/컨벤션을 얼마나 고려하는가?"
 
 If any dimension scores below 0.7, generate clarifying questions for the `suggestions` array.
 
-After scoring, pass the scores to `maetdol_score_ambiguity` which computes the weighted ambiguity and gate pass/fail.
+After scoring, pass the scores to `maetdol_score_ambiguity` which computes the weighted ambiguity and gate pass/fail. The response includes `weakest_dimension` — pass this to the interviewer so questions target the weakest area.
 
 ## Flow
 
@@ -32,23 +35,39 @@ After scoring, pass the scores to `maetdol_score_ambiguity` which computes the w
 1. Gather context:
    - The task description (from argument or conversation).
    - Relevant codebase context — use Read, Glob, Grep to understand the project structure if the task references specific code.
-2. Score the task yourself using the criteria above.
-3. Call `maetdol_score_ambiguity` with `{ context, round: 1, goal, constraints, criteria, suggestions }`.
+2. Score the task yourself using the criteria above. Use `context_clarity: 0` for round 1.
+3. Call `maetdol_score_ambiguity` with `{ context, round: 1, goal, constraints, criteria, context_clarity: 0, suggestions }`.
 4. Evaluate the response:
    - **Passed:** Output the refined requirements. Done.
    - **Not passed:** Continue to clarification.
 
-### Rounds 2-3: Clarification Loop
+### Round 2: Clarification + Contrarian Challenge
 
-1. Spawn the **interviewer** agent with the ambiguity feedback from the scoring response.
-2. The interviewer asks the user pointed clarifying questions (scope, constraints, success criteria, edge cases).
+1. Spawn the **interviewer** agent with:
+   - The ambiguity feedback from the scoring response.
+   - "현재 가장 낮은 점수 dimension은 `{weakest_dimension}` ({score})" so it targets the weakest area.
+   - "이번 라운드에서는 Contrarian challenge도 수행하라."
+2. The interviewer asks the user pointed clarifying questions and presents 1-2 contrarian challenges.
 3. Collect the user's answers.
 4. Assemble updated context: original task + all Q&A so far.
-5. Re-score the task yourself with the new context.
-6. Call `maetdol_score_ambiguity` with `{ context: "<updated context>", round: <N>, goal, constraints, criteria, suggestions }`.
+5. Re-score the task yourself with the new context. Now score `context_clarity` properly based on codebase exploration.
+6. Call `maetdol_score_ambiguity` with `{ context: "<updated context>", round: 2, goal, constraints, criteria, context_clarity, suggestions }`.
 7. **Passed:** Output refined requirements. Done.
-8. **Not passed and round < 3:** Go to step 1 of this section.
-9. **Not passed and round = 3:** Output the best requirements available. List remaining ambiguities as explicit assumptions.
+8. **Not passed:** Continue to round 3.
+
+### Round 3: Closing + Simplifier Challenge
+
+1. Spawn the **interviewer** agent with:
+   - The ambiguity feedback from the scoring response.
+   - "현재 가장 낮은 점수 dimension은 `{weakest_dimension}` ({score})".
+   - "이번 라운드에서는 Simplifier challenge도 수행하라."
+2. The interviewer confirms understanding, resolves remaining ambiguity, and challenges scope simplification.
+3. Collect the user's answers.
+4. Assemble updated context: original task + all Q&A so far.
+5. Re-score with `context_clarity`.
+6. Call `maetdol_score_ambiguity` with `{ context: "<updated context>", round: 3, goal, constraints, criteria, context_clarity, suggestions }`.
+7. **Passed:** Output refined requirements. Done.
+8. **Not passed:** Output the best requirements available. List remaining ambiguities as explicit assumptions.
 
 ### Output Format
 

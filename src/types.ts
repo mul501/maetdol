@@ -7,7 +7,7 @@ export interface GateResult {
   rounds: Array<{ question: string; answer: string }>
 }
 
-export const TASK_STATUSES = ['pending', 'in_progress', 'completed', 'blocked', 'skipped'] as const
+export const TASK_STATUSES = ['pending', 'in_progress', 'completed', 'blocked', 'skipped', 'ready_for_verify'] as const
 export type TaskStatus = (typeof TASK_STATUSES)[number]
 
 export interface TaskItem {
@@ -18,9 +18,23 @@ export interface TaskItem {
   iterations: number
   error_history: Array<{ hash: string; summary: string }>
   verify_result: 'pass' | 'fail' | null
+  acceptance_criteria: string[]
+  criteria_results: Record<string, boolean>
+  evidence: string | null
+  story_id: string | null
 }
 
-export type SessionPhase = 'gate' | 'decompose' | 'ralph' | 'verify' | 'completed'
+export type SessionPhase = 'gate' | 'stories' | 'decompose' | 'ralph' | 'verify' | 'completed'
+
+export interface UserStory {
+  id: string
+  title: string
+  acceptance_criteria: string[]
+  criteria_results: Record<string, boolean>
+  evidence: string | null
+  depends_on: string[]
+  status: TaskStatus
+}
 
 export interface Session {
   id: string
@@ -28,6 +42,7 @@ export interface Session {
   task: string
   phase: SessionPhase
   gate: GateResult | null
+  stories: UserStory[]
   tasks: TaskItem[]
   current_task_id: number | null
   unstuck: { activations: number; personas_used: string[] }
@@ -41,6 +56,7 @@ export interface AmbiguityBreakdown {
   goal: number
   constraints: number
   criteria: number
+  context: number
 }
 
 export interface AmbiguityResult {
@@ -48,6 +64,7 @@ export interface AmbiguityResult {
   breakdown: AmbiguityBreakdown
   passed: boolean
   suggestions: string[]
+  weakest_dimension: keyof AmbiguityBreakdown
 }
 
 // ── Ralph / Stagnation ───────────────────────────────────
@@ -59,6 +76,7 @@ export interface RalphIterateResult {
   consecutive_same_error: number
   session_total_iterations: number
   verify_result: 'pass' | 'fail' | null
+  evidence: string | null
 }
 
 export type StagnationType = 'spinning' | 'oscillation'
@@ -81,4 +99,5 @@ export interface TasksResult {
   next_task: TaskItem | null
   all_completed: boolean
   progress: string
+  criteria_progress: string | null
 }

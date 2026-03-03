@@ -63,9 +63,11 @@ In independent mode, stagnation detection is done locally by comparing error out
 When called from the maetdol orchestration skill, use server-side tracking:
 
 - Call `maetdol_ralph_iterate` after each verification step:
-  - **Verification passed:** `{ session_id, task_id, verify_result: "pass" }` — no error_hash or error_summary needed.
-  - **Verification failed:** `{ session_id, task_id, verify_result: "fail", error_hash: "<sha256 prefix>", error_summary: "<one-line description>" }`.
-- The server tracks iteration count, error history, and verification results.
+  - **Pass:** `{ session_id, task_id, verify_result: "pass", evidence: "<actual terminal output, ~500 chars>", criteria_met: [0, 2] }` (indices of acceptance_criteria verified).
+  - **Fail:** `{ session_id, task_id, verify_result: "fail", error_hash: "<sha256 prefix>", error_summary: "<one-line description>" }`.
+- **Evidence rules**: "tests pass" or similar summaries are forbidden. Paste actual stdout/stderr from `npm test`, `npm run build`, or equivalent.
+- **criteria_met**: Pass the indices (0-based) of the task's `acceptance_criteria` that were verified in this iteration.
+- The server tracks iteration count, error history, evidence, and criteria results.
 - The server's response indicates whether stagnation is detected.
 - Call `maetdol_detect_stagnation` with `{ error_hashes: [<recent hashes>], output_hashes: [<recent output hashes>] }` for explicit stagnation checks if needed.
 
@@ -77,6 +79,15 @@ To produce consistent hashes:
 3. Hash the normalized text.
 
 This ensures the same logical error produces the same hash even if surface details vary.
+
+## Story Verification
+
+When a story's tasks are all completed/skipped, the server marks the story as `in_progress` (awaiting verification):
+
+1. Check each story-level acceptance criterion against actual output.
+2. Record results via `maetdol_tasks` with `{ action: "verify_story", session_id, story_id, criteria_met: [<indices>], evidence: "<actual output>" }`.
+3. If not all story criteria are met: create additional tasks to address unmet criteria, then resume the ralph loop.
+4. Once all stories are verified (`completed`), proceed to final verification.
 
 ## Important Behaviors
 

@@ -11,9 +11,23 @@ const dirReady = mkdir(SESSIONS_DIR, { recursive: true })
 function normalizeSession(raw: unknown): Session {
   const session = raw as Session
 
+  session.stories ??= []
+
+  for (const story of session.stories) {
+    story.acceptance_criteria ??= []
+    story.criteria_results ??= {}
+    story.evidence ??= null
+    story.depends_on ??= []
+    story.status ??= 'pending'
+  }
+
   if (session.tasks) {
     for (const task of session.tasks) {
       task.verify_result ??= null
+      task.acceptance_criteria ??= []
+      task.criteria_results ??= {}
+      task.evidence ??= null
+      task.story_id ??= null
     }
   }
 

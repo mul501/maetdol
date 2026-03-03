@@ -39,7 +39,9 @@ All three layers are bundled in this repo. Skills live in `skills/`, agents in `
 
 ### Session lifecycle
 
-`gate` → `decompose` → `ralph` → `verify` → `completed`
+`gate` → [`stories`] → `decompose` → `ralph` → [`story verify`] → `verify` → `completed`
+
+The `stories` phase is optional — only for complex tasks with 3+ subtasks. Simple tasks skip directly from gate to decompose. Story verification happens automatically as task groups complete.
 
 Sessions persist to `~/.maetdol/sessions/{id}.json` and survive context compression and process restarts.
 
@@ -82,5 +84,5 @@ The interviewer agent (skill-side) inherits the caller's model. The contrarian a
 - **project_hash fallback**: If no `project_hash` is provided, the task description itself is hashed (`shortHash(task)`). This lets the system find existing sessions for the same task.
 - **Auto-unblocking**: When a task completes, `unblockDependents()` automatically moves blocked tasks to `pending` if all their deps are met. Called on both `update` and `next` actions.
 - **Cycle detection**: Task decomposition runs DFS cycle detection before accepting a dependency graph. Circular deps are rejected with an error, not silently broken.
-- **Ambiguity formula**: Weighted — `goal×0.4 + constraints×0.3 + criteria×0.3`. Goal clarity matters most.
+- **Ambiguity formula**: Round 1: `goal×0.4 + constraints×0.3 + criteria×0.3` (context excluded pre-exploration). Round 2+: `goal×0.35 + constraints×0.25 + criteria×0.25 + context×0.15`. Response includes `weakest_dimension` for targeted interviewing.
 - **Stagnation detection uses two patterns**: Spinning (last 3 hashes identical) and oscillation (ABAB pattern in last 4 hashes). Each maps to a different persona recommendation.
