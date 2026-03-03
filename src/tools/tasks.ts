@@ -30,6 +30,9 @@ export function registerTasksTool(server: McpServer) {
 
       switch (action) {
         case 'decompose': {
+          if (session.phase === 'gate' && !session.gate?.passed) {
+            return toolError('Gate must pass before decomposition. Call maetdol_score_ambiguity with session_id first.')
+          }
           if (!tasks || tasks.length === 0) return toolError('tasks array is required for decompose')
 
           // Check for circular dependencies
@@ -43,6 +46,7 @@ export function registerTasksTool(server: McpServer) {
             depends_on: t.depends_on,
             iterations: 0,
             error_history: [],
+            verify_result: null,
           }))
           session.phase = 'ralph'
           await saveSession(session)

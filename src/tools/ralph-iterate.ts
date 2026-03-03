@@ -3,6 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { RalphIterateResult } from '../types.js'
 import { loadSession, saveSession } from '../lib/storage.js'
 import { ok, toolError } from '../lib/response.js'
+import { redactSecrets } from '../lib/redact.js'
 
 const MAX_TASK_ITERATIONS = 5
 const MAX_SESSION_ITERATIONS = 30
@@ -19,14 +20,24 @@ export function registerRalphIterateTool(server: McpServer) {
         task_id: z.number(),
         error_hash: z.string().optional().describe('SHA-256 prefix (8 chars) of the error output'),
         error_summary: z.string().optional().describe('Human-readable error summary'),
+        verify_result: z.enum(['pass', 'fail']).optional().describe('Result of the verification step for this iteration'),
       },
     },
-    async ({ session_id, task_id, error_hash, error_summary }) => {
+    async ({ session_id, task_id, error_hash, error_summary, verify_result }) => {
       const session = await loadSession(session_id)
       if (!session) return toolError(`Session ${session_id} not found`)
 
+      if (session.phase !== 'ralph') {
+        return toolError(`Cannot iterate in phase "${session.phase}". Decompose tasks first.`)
+      }
+
       const task = session.tasks.find((t) => t.id === task_id)
       if (!task) return toolError(`Task ${task_id} not found`)
+
+      // Record verification result
+      if (verify_result) {
+        task.verify_result = verify_result
+      }
 
       // Increment iteration
       task.iterations++
@@ -35,7 +46,7 @@ export function registerRalphIterateTool(server: McpServer) {
       if (error_hash) {
         task.error_history.push({
           hash: error_hash,
-          summary: error_summary ?? '',
+          summary: redactSecrets(error_summary ?? ''),
         })
       }
 
@@ -68,6 +79,7 @@ export function registerRalphIterateTool(server: McpServer) {
         stagnation_detected: stagnationDetected,
         consecutive_same_error: consecutiveSame,
         session_total_iterations: sessionTotal,
+        verify_result: task.verify_result,
       }
 
       return ok(result)

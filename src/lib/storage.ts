@@ -8,12 +8,24 @@ const SESSIONS_DIR = join(BASE_DIR, 'sessions')
 
 const dirReady = mkdir(SESSIONS_DIR, { recursive: true })
 
+function normalizeSession(raw: unknown): Session {
+  const session = raw as Session
+
+  if (session.tasks) {
+    for (const task of session.tasks) {
+      task.verify_result ??= null
+    }
+  }
+
+  return session
+}
+
 export async function loadSession(id: string): Promise<Session | null> {
   await dirReady
   const path = join(SESSIONS_DIR, `${id}.json`)
   try {
     const raw = await readFile(path, 'utf-8')
-    return JSON.parse(raw) as Session
+    return normalizeSession(JSON.parse(raw))
   } catch (err: unknown) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null
     throw err
@@ -34,7 +46,7 @@ export async function findActiveSession(projectHash: string): Promise<Session | 
     files.map(async (file) => {
       try {
         const raw = await readFile(join(SESSIONS_DIR, file), 'utf-8')
-        return JSON.parse(raw) as Session
+        return normalizeSession(JSON.parse(raw))
       } catch {
         return null
       }

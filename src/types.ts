@@ -17,6 +17,7 @@ export interface TaskItem {
   depends_on: number[]
   iterations: number
   error_history: Array<{ hash: string; summary: string }>
+  verify_result: 'pass' | 'fail' | null
 }
 
 export type SessionPhase = 'gate' | 'decompose' | 'ralph' | 'verify' | 'completed'
@@ -57,6 +58,7 @@ export interface RalphIterateResult {
   stagnation_detected: boolean
   consecutive_same_error: number
   session_total_iterations: number
+  verify_result: 'pass' | 'fail' | null
 }
 
 export type StagnationType = 'spinning' | 'oscillation'

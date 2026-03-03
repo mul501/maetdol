@@ -62,8 +62,10 @@ In independent mode, stagnation detection is done locally by comparing error out
 
 When called from the maetdol orchestration skill, use server-side tracking:
 
-- Call `maetdol_ralph_iterate` with `{ session_id, task_id, error_hash: "<sha256 of error text>", error_summary: "<one-line description>" }` after each failed verification.
-- The server tracks iteration count and error history.
+- Call `maetdol_ralph_iterate` after each verification step:
+  - **Verification passed:** `{ session_id, task_id, verify_result: "pass" }` — no error_hash or error_summary needed.
+  - **Verification failed:** `{ session_id, task_id, verify_result: "fail", error_hash: "<sha256 prefix>", error_summary: "<one-line description>" }`.
+- The server tracks iteration count, error history, and verification results.
 - The server's response indicates whether stagnation is detected.
 - Call `maetdol_detect_stagnation` with `{ error_hashes: [<recent hashes>], output_hashes: [<recent output hashes>] }` for explicit stagnation checks if needed.
 

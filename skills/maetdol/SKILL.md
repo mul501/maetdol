@@ -27,18 +27,18 @@ Determine whether to create a new session or resume an existing one.
 - Jump directly to the corresponding step below (skip completed phases).
 
 **Get session info:**
-- Call `maetdol_session` with `{ action: "get" }` to inspect current state without modifying it.
+- Call `maetdol_session` with `{ action: "get", session_id: "<id>" }` to inspect current state without modifying it.
 
 ## Step 2: Gate (Ambiguity Check)
 
 Before any work begins, verify the task is well-defined.
 
-1. Call `maetdol_score_ambiguity` with `{ context: "<task description + any gathered context>", round: 1 }`.
+1. Call `maetdol_score_ambiguity` with `{ context: "<task description + any gathered context>", round: 1, goal: <score>, constraints: <score>, criteria: <score>, suggestions: [<questions>], session_id: "<id>" }`.
 2. If the score indicates the task **passes** the gate:
    - Proceed to Step 3 with the refined requirements from the response.
 3. If the score indicates the task **does not pass**:
    - Spawn the **interviewer** agent to ask the user socratic clarifying questions.
-   - After the user answers, call `maetdol_score_ambiguity` again with `{ context: "<original + answers>", round: 2 }`.
+   - After the user answers, call `maetdol_score_ambiguity` again with `{ context: "<original + answers>", round: 2, goal: <score>, constraints: <score>, criteria: <score>, suggestions: [<questions>], session_id: "<id>" }`.
    - Repeat up to 3 rounds. If still ambiguous after round 3, proceed with best-effort requirements and note the remaining ambiguities.
 
 ## Step 3: Decompose
@@ -59,15 +59,13 @@ Iterate through subtasks one by one.
 2. If no tasks remain, go to Step 5.
 3. **Execute** the task using standard Claude Code tools (Read, Edit, Write, Bash, etc.).
 4. **Verify** the result — run tests, check output, confirm the change is correct.
-5. **On success:**
-   - Call `maetdol_tasks` with `{ action: "update", session_id: "<id>", task_id: "<id>", status: "completed" }`.
-   - Return to step 4.1.
-6. **On failure:**
-   - Call `maetdol_ralph_iterate` with `{ session_id: "<id>", task_id: "<id>", error_hash: "<hash of error>", error_summary: "<brief description>" }`.
-   - The server returns iteration count and error history.
-   - **If iteration < 5:** Fix the issue and verify again (go to step 4.4).
-   - **If stagnation detected** (3+ consecutive identical error hashes): Invoke the **unstuck** skill to get alternative approaches, then retry.
-   - **If max iterations (5) reached:** Call `maetdol_tasks` with `{ action: "update", session_id: "<id>", task_id: "<id>", status: "skipped" }`. Log the reason and move to the next task.
+5. **Record** the result via `maetdol_ralph_iterate`:
+   - **Pass:** `{ session_id: "<id>", task_id: <id>, verify_result: "pass" }`.
+   - **Fail:** `{ session_id: "<id>", task_id: <id>, verify_result: "fail", error_hash: "<sha256 prefix>", error_summary: "<one-line description>" }`.
+6. **On pass:** Call `maetdol_tasks` with `{ action: "update", session_id: "<id>", task_id: <id>, status: "completed" }`. Return to step 4.1.
+7. **On fail + should_continue:** Fix the issue and go to step 4.4.
+8. **On fail + stagnation detected:** Invoke the **unstuck** skill to get alternative approaches, then retry from step 4.4.
+9. **On fail + max iterations (5) reached:** Call `maetdol_tasks` with `{ action: "update", session_id: "<id>", task_id: <id>, status: "skipped" }`. Log the reason and move to the next task.
 
 ## Step 5: Final Verification
 
@@ -80,7 +78,7 @@ After all tasks are processed:
 
 ## Step 6: Complete Session
 
-1. Call `maetdol_session` with `{ action: "complete" }`.
+1. Call `maetdol_session` with `{ action: "complete", session_id: "<id>" }`.
 2. Summarize what was accomplished, what was skipped, and any remaining work.
 
 ## Session Recovery
@@ -89,9 +87,9 @@ When resuming a session, the server returns the exact state:
 
 | Phase | Recovery Action |
 |-------|----------------|
-| `gate` | Re-run gate from the stored round number |
+| `gate` | Re-run gate from round 1 (round context is not persisted server-side) |
 | `decompose` | Task list already exists, skip to ralph loop |
-| `execute` | Read `current_task_id` and `iteration`, resume ralph loop from that point |
+| `ralph` | Read `current_task_id` and `iteration`, resume ralph loop from that point |
 | `verify` | Re-run final verification |
 
 Never re-execute completed tasks. Always read the session state before acting.

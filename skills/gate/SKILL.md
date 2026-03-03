@@ -74,8 +74,8 @@ When the gate passes (or max rounds reached), output:
 When called from the maetdol orchestration skill:
 
 - The session context is automatically included.
-- Gate results are stored in the session for recovery.
-- The round number is persisted so a resumed session can continue where it left off.
+- **Pass `session_id` to `maetdol_score_ambiguity`** so the server persists the gate result to the session. When the gate passes, the server automatically advances the session phase to `decompose`.
+- The server persists only the final gate result (score, passed, refined_task). Round context is managed by this skill within the conversation — the server does not track individual rounds.
 
 ## Important Behaviors
 
