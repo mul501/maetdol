@@ -1,0 +1,28 @@
+{
+  "name": "maetdol",
+  "version": "0.1.0",
+  "description": "Claude Code productivity plugin — ambiguity gate, task decomposition, verify-fix loops, stagnation detection",
+  "mcpServers": {
+    "maetdol": {
+      "command": "npx",
+      "args": ["tsx", "src/server.ts"],
+      "cwd": "."
+    }
+  },
+  "skills": [
+    "skills/maetdol/SKILL.md",
+    "skills/gate/SKILL.md",
+    "skills/ralph/SKILL.md",
+    "skills/unstuck/SKILL.md"
+  ],
+  "agents": [
+    "agents/interviewer.md",
+    "agents/contrarian.md",
+    "agents/simplifier.md"
+  ],
+  "commands": [
+    "commands/maetdol.md",
+    "commands/gate.md",
+    "commands/unstuck.md"
+  ]
+}
