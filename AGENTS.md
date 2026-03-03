@@ -20,7 +20,7 @@ Claude Code productivity MCP plugin. Ambiguity gate, task decomposition, verify-
 ├── agents/        # Persona definitions for unstuck skill
 ├── commands/      # Claude Code slash command definitions
 ├── skills/        # Claude Code skills (maetdol, gate, ralph, unstuck)
-└── .mcp.json      # MCP server registration config
+└── mcp-config.json # MCP server registration config
 ```
 
 ## WHERE TO LOOK

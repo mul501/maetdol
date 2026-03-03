@@ -37,7 +37,7 @@ Call `maetdol_session` with `{ action: "create", task: "setup-verify" }` to conf
 
 If this fails, report the error and suggest troubleshooting steps:
 - Check that `npm install` completed successfully
-- Verify the MCP server configuration in `.mcp.json`
+- Verify the MCP server configuration in `mcp-config.json`
 - Try running `npm run dev` manually to see server output
 
 ### 4. Clean Up Test Session

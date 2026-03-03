@@ -7,7 +7,7 @@
   "license": "MIT",
   "keywords": ["productivity", "ambiguity", "task-decomposition", "stagnation"],
   "skills": "./skills/",
-  "mcpServers": "./.mcp.json",
+  "mcpServers": "./mcp-config.json",
   "agents": "./agents/",
   "commands": "./commands/"
 }
