@@ -197,13 +197,19 @@ function areStoryTasksDone(tasks: TaskItem[], storyId: string): boolean {
 }
 
 function buildResult(session: Session): TasksResult {
-  const completed = session.tasks.filter((t) => t.status === 'completed' || t.status === 'skipped').length
+  let completed = 0
+  let nextTask: TaskItem | null = null
+  let totalCriteria = 0
+  let metCriteria = 0
+
+  for (const t of session.tasks) {
+    if (t.status === 'completed' || t.status === 'skipped') completed++
+    if (!nextTask && t.status === 'pending') nextTask = t
+    totalCriteria += t.acceptance_criteria.length
+    metCriteria += Object.values(t.criteria_results).filter(Boolean).length
+  }
+
   const total = session.tasks.length
-  const nextTask = session.tasks.find((t) => t.status === 'pending') ?? null
-
-  const totalCriteria = session.tasks.reduce((sum, t) => sum + t.acceptance_criteria.length, 0)
-  const metCriteria = session.tasks.reduce((sum, t) => sum + Object.values(t.criteria_results).filter(Boolean).length, 0)
-
   return {
     tasks: session.tasks,
     next_task: nextTask,

@@ -3,3 +3,4 @@ export const AMBIGUITY_THRESHOLD = 0.3
 export const MAX_TASK_ITERATIONS = 5
 export const MAX_SESSION_ITERATIONS = 30
 export const STAGNATION_THRESHOLD = 3
+export const OSCILLATION_WINDOW = 4

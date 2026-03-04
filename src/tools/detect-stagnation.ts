@@ -2,6 +2,7 @@ import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { StagnationResult, StagnationPattern } from '../types.js'
 import { ok } from '../lib/response.js'
+import { STAGNATION_THRESHOLD, OSCILLATION_WINDOW } from '../lib/constants.js'
 
 export function registerDetectStagnationTool(server: McpServer) {
   server.registerTool(
@@ -49,16 +50,16 @@ export function registerDetectStagnationTool(server: McpServer) {
 }
 
 function detectSpinning(hashes: string[]): boolean {
-  if (hashes.length < 3) return false
-  const last3 = hashes.slice(-3)
-  return last3[0] === last3[1] && last3[1] === last3[2]
+  if (hashes.length < STAGNATION_THRESHOLD) return false
+  const last = hashes.slice(-STAGNATION_THRESHOLD)
+  return last.every((h) => h === last[0])
 }
 
 function detectOscillation(hashes: string[]): boolean {
-  if (hashes.length < 4) return false
-  const last4 = hashes.slice(-4)
-  const evenSame = last4[0] === last4[2]
-  const oddSame = last4[1] === last4[3]
-  const different = last4[0] !== last4[1]
+  if (hashes.length < OSCILLATION_WINDOW) return false
+  const last = hashes.slice(-OSCILLATION_WINDOW)
+  const evenSame = last[0] === last[2]
+  const oddSame = last[1] === last[3]
+  const different = last[0] !== last[1]
   return evenSame && oddSame && different
 }
