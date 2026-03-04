@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "maetdol": {
-      "command": "npx",
-      "args": ["tsx", "src/server.ts"],
+      "command": "node",
+      "args": ["dist/server.js"],
       "cwd": "${CLAUDE_PLUGIN_ROOT}"
     }
   }

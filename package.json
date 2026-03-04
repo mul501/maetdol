@@ -6,8 +6,9 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx src/server.ts",
-    "build": "tsup src/server.ts --format esm --dts --outDir dist",
-    "typecheck": "tsc --noEmit"
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "prebuild": "npm run typecheck"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",

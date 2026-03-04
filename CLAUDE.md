@@ -87,3 +87,4 @@ The interviewer agent (skill-side) inherits the caller's model. The contrarian a
 - **Cycle detection**: Task decomposition runs DFS cycle detection before accepting a dependency graph. Circular deps are rejected with an error, not silently broken.
 - **Ambiguity formula**: Round 1: `goal×0.4 + constraints×0.3 + criteria×0.3` (context excluded pre-exploration). Round 2+: `goal×0.35 + constraints×0.25 + criteria×0.25 + context×0.15`. Response includes `weakest_dimension` for targeted interviewing.
 - **Stagnation detection uses two patterns**: Spinning (last 3 hashes identical) and oscillation (ABAB pattern in last 4 hashes). Each maps to a different persona recommendation.
+- **`dist/` commit rule**: When `src/` or `package.json` dependencies change, always run `npm run build` and commit `dist/server.js` together. Marketplace users have no `node_modules/` — they run `node dist/server.js` directly. Source/bundle mismatch breaks user environments.
