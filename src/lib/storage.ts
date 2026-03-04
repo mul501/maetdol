@@ -19,6 +19,12 @@ function migrateStringKeysToNumber(record: Record<string | number, boolean>): Re
 
 function normalizeSession(raw: unknown): Session {
   const s = raw as Record<string, unknown>
+
+  if (typeof s.id !== 'string' || typeof s.project_id !== 'string' ||
+      typeof s.task !== 'string' || typeof s.phase !== 'string') {
+    throw new Error('Corrupt session: missing required fields (id, project_id, task, or phase)')
+  }
+
   const session = s as unknown as Session
 
   session.design ??= null
@@ -52,7 +58,7 @@ export async function loadSession(id: string): Promise<Session | null> {
     const raw = await readFile(path, 'utf-8')
     return normalizeSession(JSON.parse(raw))
   } catch (err: unknown) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null
+    if (err instanceof Error && 'code' in err && (err as NodeJS.ErrnoException).code === 'ENOENT') return null
     throw err
   }
 }
@@ -72,7 +78,8 @@ async function loadAllSessions(): Promise<Session[]> {
       try {
         const raw = await readFile(join(SESSIONS_DIR, file), 'utf-8')
         return normalizeSession(JSON.parse(raw))
-      } catch {
+      } catch (err) {
+        console.error(`maetdol: skipping corrupt session file ${file}:`, err instanceof Error ? err.message : err)
         return null
       }
     }),
@@ -81,8 +88,18 @@ async function loadAllSessions(): Promise<Session[]> {
 }
 
 export async function findActiveSession(projectId: string): Promise<Session | null> {
-  const sessions = await loadAllSessions()
-  return sessions.find((s) => s.project_id === projectId && s.phase !== PHASE.completed) ?? null
+  await dirReady
+  const files = (await readdir(SESSIONS_DIR)).filter((f) => f.endsWith('.json'))
+  for (const file of files) {
+    try {
+      const raw = await readFile(join(SESSIONS_DIR, file), 'utf-8')
+      const session = normalizeSession(JSON.parse(raw))
+      if (session.project_id === projectId && session.phase !== PHASE.completed) return session
+    } catch (err) {
+      console.error(`maetdol: skipping corrupt session file ${file}:`, err instanceof Error ? err.message : err)
+    }
+  }
+  return null
 }
 
 export async function listSessions(projectId?: string): Promise<
