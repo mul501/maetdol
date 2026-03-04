@@ -1,3 +1,5 @@
+import { PHASE } from './lib/constants.js'
+
 // ── Session ──────────────────────────────────────────────
 
 export type VerifyResult = 'pass' | 'fail' | null
@@ -6,6 +8,15 @@ export interface GateResult {
   score: number
   passed: boolean
   refined_task: string
+  project_type?: 'new' | 'existing'
+  relevant_files?: string[]
+}
+
+export interface DesignResult {
+  summary: string | null
+  files_to_modify: string[]
+  files_to_create: string[]
+  skipped: boolean
 }
 
 export const TASK_STATUSES = ['pending', 'in_progress', 'completed', 'blocked', 'skipped', 'ready_for_verify'] as const
@@ -25,7 +36,7 @@ export interface TaskItem {
   story_id: string | null
 }
 
-export type SessionPhase = 'gate' | 'stories' | 'decompose' | 'ralph' | 'verify' | 'completed'
+export type SessionPhase = (typeof PHASE)[keyof typeof PHASE]
 
 export interface UserStory {
   id: string
@@ -43,6 +54,7 @@ export interface Session {
   task: string
   phase: SessionPhase
   gate: GateResult | null
+  design: DesignResult | null
   stories: UserStory[]
   tasks: TaskItem[]
   current_task_id: number | null

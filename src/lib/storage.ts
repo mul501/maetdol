@@ -2,6 +2,7 @@ import { readFile, writeFile, mkdir, readdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
 import type { Session, SessionPhase } from '../types.js'
+import { PHASE } from './constants.js'
 
 const BASE_DIR = join(homedir(), '.maetdol')
 const SESSIONS_DIR = join(BASE_DIR, 'sessions')
@@ -20,6 +21,7 @@ function normalizeSession(raw: unknown): Session {
   const s = raw as Record<string, unknown>
   const session = s as unknown as Session
 
+  session.design ??= null
   session.stories ??= []
 
   for (const story of session.stories) {
@@ -80,7 +82,7 @@ async function loadAllSessions(): Promise<Session[]> {
 
 export async function findActiveSession(projectId: string): Promise<Session | null> {
   const sessions = await loadAllSessions()
-  return sessions.find((s) => s.project_id === projectId && s.phase !== 'completed') ?? null
+  return sessions.find((s) => s.project_id === projectId && s.phase !== PHASE.completed) ?? null
 }
 
 export async function listSessions(projectId?: string): Promise<

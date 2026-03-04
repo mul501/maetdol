@@ -3,7 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { AmbiguityResult } from '../types.js'
 import { loadSession, saveSession } from '../lib/storage.js'
 import { ok, toolError } from '../lib/response.js'
-import { AMBIGUITY_THRESHOLD } from '../lib/constants.js'
+import { AMBIGUITY_THRESHOLD, PHASE } from '../lib/constants.js'
 
 export function registerScoreAmbiguityTool(server: McpServer) {
   server.registerTool(
@@ -19,10 +19,12 @@ export function registerScoreAmbiguityTool(server: McpServer) {
         criteria: z.number().min(0).max(1).describe('Success criteria clarity score (0.0=vague, 1.0=clear)'),
         context_clarity: z.number().min(0).max(1).default(0).describe('Context clarity: how well the task accounts for existing codebase patterns. Use 0.0 for round 1 (pre-exploration), score properly from round 2+.'),
         suggestions: z.array(z.string()).optional().describe('Clarifying questions if scores are low'),
+        project_type: z.enum(['new', 'existing']).optional().describe('Whether this is a new or existing project'),
+        relevant_files: z.array(z.string()).optional().describe('Files relevant to the task, discovered during codebase exploration'),
         session_id: z.string().optional().describe('If provided, persist gate result to session'),
       },
     },
-    async ({ context, round, goal, constraints, criteria, context_clarity, suggestions, session_id }) => {
+    async ({ context, round, goal, constraints, criteria, context_clarity, suggestions, project_type, relevant_files, session_id }) => {
       // Round 1: ignore context (pre-exploration), use 3-dim formula
       // Round 2+: include context clarity as 4th dimension
       const useContext = round > 1
@@ -52,9 +54,11 @@ export function registerScoreAmbiguityTool(server: McpServer) {
           score: result.ambiguity,
           passed: result.passed,
           refined_task: context,
+          project_type,
+          relevant_files,
         }
-        if (result.passed && session.phase === 'gate') {
-          session.phase = 'stories'
+        if (result.passed && session.phase === PHASE.gate) {
+          session.phase = PHASE.design
         }
         await saveSession(session)
       }

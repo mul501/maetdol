@@ -5,6 +5,7 @@ import type { Session } from '../types.js'
 import { loadSession, saveSession, findActiveSession } from '../lib/storage.js'
 import { shortHash } from '../lib/hash.js'
 import { ok, toolError } from '../lib/response.js'
+import { PHASE } from '../lib/constants.js'
 
 export function registerSessionTool(server: McpServer) {
   server.registerTool(
@@ -41,8 +42,9 @@ export function registerSessionTool(server: McpServer) {
             id: randomUUID().slice(0, 12),
             project_id: projectId,
             task,
-            phase: 'gate',
+            phase: PHASE.gate,
             gate: null,
+            design: null,
             stories: [],
             tasks: [],
             current_task_id: null,
@@ -84,7 +86,7 @@ export function registerSessionTool(server: McpServer) {
           if (!session_id) return toolError('session_id is required for complete')
           const session = await loadSession(session_id)
           if (!session) return toolError(`Session ${session_id} not found`)
-          const completed: Session = { ...session, phase: 'completed' }
+          const completed: Session = { ...session, phase: PHASE.completed }
           await saveSession(completed)
           return ok({ session: completed, is_resumed: false, resume_point: null })
         }

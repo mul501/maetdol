@@ -4,7 +4,7 @@ import type { RalphIterateResult } from '../types.js'
 import { loadSession, saveSession } from '../lib/storage.js'
 import { ok, toolError } from '../lib/response.js'
 import { redactSecrets } from '../lib/redact.js'
-import { MAX_EVIDENCE_LENGTH, MAX_TASK_ITERATIONS, MAX_SESSION_ITERATIONS, STAGNATION_THRESHOLD } from '../lib/constants.js'
+import { MAX_EVIDENCE_LENGTH, MAX_TASK_ITERATIONS, MAX_SESSION_ITERATIONS, STAGNATION_THRESHOLD, PHASE } from '../lib/constants.js'
 import { applyCriteriaMet } from '../lib/validation.js'
 
 export function registerRalphIterateTool(server: McpServer) {
@@ -27,7 +27,7 @@ export function registerRalphIterateTool(server: McpServer) {
       const session = await loadSession(session_id)
       if (!session) return toolError(`Session ${session_id} not found`)
 
-      if (session.phase !== 'ralph') {
+      if (session.phase !== PHASE.ralph) {
         return toolError(`Cannot iterate in phase "${session.phase}". Decompose tasks first.`)
       }
 

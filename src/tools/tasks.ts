@@ -4,7 +4,7 @@ import type { Session, TaskItem, TaskStatus, TasksResult } from '../types.js'
 import { TASK_STATUSES } from '../types.js'
 import { loadSession, saveSession } from '../lib/storage.js'
 import { ok, toolError } from '../lib/response.js'
-import { MAX_EVIDENCE_LENGTH } from '../lib/constants.js'
+import { MAX_EVIDENCE_LENGTH, PHASE } from '../lib/constants.js'
 import { validateDependencyRefs, applyCriteriaMet } from '../lib/validation.js'
 
 const TaskItemSchema = z.object({
@@ -45,7 +45,7 @@ export function registerTasksTool(server: McpServer) {
 
       switch (action) {
         case 'decompose': {
-          if (session.phase === 'gate') {
+          if (session.phase === PHASE.gate) {
             if (!session.gate) {
               return toolError(`Gate not started. Call maetdol_score_ambiguity with session_id="${session_id}" first.`)
             }
@@ -80,7 +80,7 @@ export function registerTasksTool(server: McpServer) {
             evidence: null,
             story_id: t.story_id,
           }))
-          session.phase = 'ralph'
+          session.phase = PHASE.ralph
           await saveSession(session)
           return ok(buildResult(session))
         }
@@ -114,7 +114,7 @@ export function registerTasksTool(server: McpServer) {
 
           // Check if all completed
           if (session.tasks.every((t) => t.status === 'completed' || t.status === 'skipped')) {
-            session.phase = 'verify'
+            session.phase = PHASE.verify
           }
 
           await saveSession(session)
@@ -146,7 +146,7 @@ export function registerTasksTool(server: McpServer) {
             depends_on: s.depends_on,
             status: s.depends_on.length > 0 ? 'blocked' : 'pending',
           }))
-          session.phase = 'decompose'
+          session.phase = PHASE.decompose
           await saveSession(session)
           return ok({ stories: session.stories })
         }
