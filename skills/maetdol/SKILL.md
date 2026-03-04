@@ -10,10 +10,10 @@ Entry point for the `/maetdol` command. Runs the full pipeline: session manageme
 ## Flow Overview
 
 ```
-session create/resume → gate → [stories] → decompose → [ralph loop per task] → [story verify] → final verify → session complete
+session create/resume → gate → [design] → [stories] → decompose → [ralph loop per task] → [story verify] → final verify → session complete
 ```
 
-The `stories` phase is optional — only for complex tasks with 3+ subtasks. Simple tasks skip directly to `decompose`.
+The `design` phase is optional — simple/clear tasks can skip it. The `stories` phase is optional — only for complex tasks with 3+ subtasks. Simple tasks skip directly to `decompose`.
 
 ## Step 0: Identify Project
 
@@ -49,6 +49,15 @@ Before any work begins, verify the task is well-defined.
    - Spawn the **interviewer** agent to ask the user socratic clarifying questions. Pass `weakest_dimension` from the response so questions target the weakest area.
    - After the user answers, call `maetdol_score_ambiguity` again with `{ context: "<original + answers>", round: 2, goal: <score>, constraints: <score>, criteria: <score>, context_clarity: <score>, suggestions: [<questions>], session_id: "<id>" }`.
    - Repeat up to 3 rounds. If still ambiguous after round 3, proceed with best-effort requirements and note the remaining ambiguities.
+
+## Step 2.5: Design (optional — requirements analysis and architecture)
+
+After the gate passes, the session is in `design` phase. Run the **design** skill to analyze requirements and produce an architecture plan.
+
+1. Read the session to check `gate.score` and `gate.relevant_files`.
+2. **Skip condition**: If `gate.score < 0.15` AND `relevant_files` has 2 or fewer entries, call `maetdol_design` with `{ session_id, skip: true }` and proceed to Step 3a.
+3. **Full design**: Follow the design skill flow — analyze the codebase, propose architecture, present to user, then call `maetdol_design` with the results.
+4. The server advances the phase to `stories`.
 
 ## Step 3a: Stories (optional — structure requirements as User Stories)
 
@@ -127,6 +136,7 @@ When resuming a session, the server returns the exact state:
 | Phase | Recovery Action |
 |-------|----------------|
 | `gate` | Re-run gate from round 1 (round context is not persisted server-side) |
+| `design` | If `session.design` exists, skip to stories. Otherwise re-run design skill. |
 | `stories` | Stories already exist, skip to decompose |
 | `decompose` | Task list already exists, skip to ralph loop |
 | `ralph` | Read `current_task_id` and `iteration`, resume ralph loop from that point |

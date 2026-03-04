@@ -35,9 +35,13 @@ After scoring, pass the scores to `maetdol_score_ambiguity` which computes the w
 1. Gather context:
    - The task description (from argument or conversation).
    - Relevant codebase context — use Read, Glob, Grep to understand the project structure if the task references specific code.
-2. Score the task yourself using the criteria above. Use `context_clarity: 0` for round 1.
-3. Call `maetdol_score_ambiguity` with `{ context, round: 1, goal, constraints, criteria, context_clarity: 0, suggestions }`.
-4. Evaluate the response:
+2. Determine `project_type`:
+   - Use Glob to check for source files (`src/**`, `lib/**`, `app/**`, `*.ts`, `*.py`, `*.go`, `*.js`, etc.).
+   - If source files exist → `project_type: 'existing'`.
+   - If no source files → `project_type: 'new'`.
+3. Score the task yourself using the criteria above. Use `context_clarity: 0` for round 1.
+4. Call `maetdol_score_ambiguity` with `{ context, round: 1, goal, constraints, criteria, context_clarity: 0, suggestions, project_type }`.
+5. Evaluate the response:
    - **Passed:** Output the refined requirements. Done.
    - **Not passed:** Continue to clarification.
 
@@ -50,10 +54,14 @@ After scoring, pass the scores to `maetdol_score_ambiguity` which computes the w
 2. The interviewer asks the user pointed clarifying questions and presents 1-2 contrarian challenges.
 3. Collect the user's answers.
 4. Assemble updated context: original task + all Q&A so far.
-5. Re-score the task yourself with the new context. Now score `context_clarity` properly based on codebase exploration.
-6. Call `maetdol_score_ambiguity` with `{ context: "<updated context>", round: 2, goal, constraints, criteria, context_clarity, suggestions }`.
-7. **Passed:** Output refined requirements. Done.
-8. **Not passed:** Continue to round 3.
+5. Identify `relevant_files` during codebase exploration:
+   - Use Grep with task-related keywords to find relevant source files.
+   - Collect file paths the interviewer explored or referenced.
+   - Include only files directly relevant to the task (not every file in the project).
+6. Re-score the task yourself with the new context. Now score `context_clarity` properly based on codebase exploration.
+7. Call `maetdol_score_ambiguity` with `{ context: "<updated context>", round: 2, goal, constraints, criteria, context_clarity, suggestions, project_type, relevant_files }`.
+8. **Passed:** Output refined requirements. Done.
+9. **Not passed:** Continue to round 3.
 
 ### Round 3: Closing + Simplifier Challenge
 
@@ -65,7 +73,7 @@ After scoring, pass the scores to `maetdol_score_ambiguity` which computes the w
 3. Collect the user's answers.
 4. Assemble updated context: original task + all Q&A so far.
 5. Re-score with `context_clarity`.
-6. Call `maetdol_score_ambiguity` with `{ context: "<updated context>", round: 3, goal, constraints, criteria, context_clarity, suggestions }`.
+6. Call `maetdol_score_ambiguity` with `{ context: "<updated context>", round: 3, goal, constraints, criteria, context_clarity, suggestions, project_type, relevant_files }`.
 7. **Passed:** Output refined requirements. Done.
 8. **Not passed:** Output the best requirements available. List remaining ambiguities as explicit assumptions.
 
@@ -93,8 +101,8 @@ When the gate passes (or max rounds reached), output:
 When called from the maetdol orchestration skill:
 
 - The session context is automatically included.
-- **Pass `session_id` to `maetdol_score_ambiguity`** so the server persists the gate result to the session. When the gate passes, the server automatically advances the session phase to `decompose`.
-- The server persists only the final gate result (score, passed, refined_task). Round context is managed by this skill within the conversation — the server does not track individual rounds.
+- **Pass `session_id` to `maetdol_score_ambiguity`** so the server persists the gate result to the session. When the gate passes, the server automatically advances the session phase to `design`.
+- The server persists the gate result (score, passed, refined_task, project_type, relevant_files). Round context is managed by this skill within the conversation — the server does not track individual rounds.
 
 ## Important Behaviors
 

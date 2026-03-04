@@ -22,6 +22,7 @@ npm run typecheck  # tsc --noEmit
 /maetdol:setup     # Install deps and verify MCP server
 /maetdol "task"    # Full pipeline — gate → decompose → ralph → verify
 /maetdol:gate      # Check ambiguity only
+/maetdol:design    # Requirements analysis and architecture design
 /maetdol:unstuck   # Break out of a stuck loop
 ```
 
@@ -39,9 +40,9 @@ All three layers are bundled in this repo. Skills live in `skills/`, agents in `
 
 ### Session lifecycle
 
-`gate` → [`stories`] → `decompose` → `ralph` → [`story verify`] → `verify` → `completed`
+`gate` → [`design`] → [`stories`] → `decompose` → `ralph` → [`story verify`] → `verify` → `completed`
 
-The `stories` phase is optional — only for complex tasks with 3+ subtasks. Simple tasks skip directly from gate to decompose. Story verification happens automatically as task groups complete.
+The `design` phase is optional — simple/clear tasks can skip it. The `stories` phase is optional — only for complex tasks with 3+ subtasks. Simple tasks skip directly from gate to decompose. Story verification happens automatically as task groups complete.
 
 Sessions persist to `~/.maetdol/sessions/{id}.json` and survive context compression and process restarts.
 
