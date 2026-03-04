@@ -15,19 +15,19 @@ export function registerSessionTool(server: McpServer) {
         action: z.enum(['create', 'get', 'resume', 'complete']),
         session_id: z.string().optional(),
         task: z.string().optional(),
-        project_hash: z.string().optional(),
+        project_id: z.string().optional(),
       },
     },
-    async ({ action, session_id, task, project_hash }) => {
+    async ({ action, session_id, task, project_id }) => {
       switch (action) {
         case 'create': {
           if (!task) {
             return toolError('task is required for create')
           }
-          const hash = project_hash ?? shortHash(task)
+          const projectId = project_id ?? shortHash(task)
 
           // Check for existing active session
-          const existing = await findActiveSession(hash)
+          const existing = await findActiveSession(projectId)
           if (existing) {
             return ok({
               session: existing,
@@ -39,7 +39,7 @@ export function registerSessionTool(server: McpServer) {
 
           const session: Session = {
             id: randomUUID().slice(0, 12),
-            project_hash: hash,
+            project_id: projectId,
             task,
             phase: 'gate',
             gate: null,
@@ -65,8 +65,8 @@ export function registerSessionTool(server: McpServer) {
           let session: Session | null = null
           if (session_id) {
             session = await loadSession(session_id)
-          } else if (project_hash) {
-            session = await findActiveSession(project_hash)
+          } else if (project_id) {
+            session = await findActiveSession(project_id)
           }
           if (!session) return toolError('No active session found to resume')
 

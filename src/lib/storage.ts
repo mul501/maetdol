@@ -9,7 +9,15 @@ const SESSIONS_DIR = join(BASE_DIR, 'sessions')
 const dirReady = mkdir(SESSIONS_DIR, { recursive: true })
 
 function normalizeSession(raw: unknown): Session {
-  const session = raw as Session
+  const s = raw as Record<string, unknown>
+  if ('project_hash' in s) {
+    if (!('project_id' in s)) {
+      s.project_id = s.project_hash
+    }
+    delete s.project_hash
+  }
+
+  const session = s as unknown as Session
 
   session.stories ??= []
 
@@ -69,16 +77,17 @@ async function loadAllSessions(): Promise<Session[]> {
   return sessions.filter((s): s is Session => s !== null)
 }
 
-export async function findActiveSession(projectHash: string): Promise<Session | null> {
+export async function findActiveSession(projectId: string): Promise<Session | null> {
   const sessions = await loadAllSessions()
-  return sessions.find((s) => s.project_hash === projectHash && s.phase !== 'completed') ?? null
+  return sessions.find((s) => s.project_id === projectId && s.phase !== 'completed') ?? null
 }
 
-export async function listSessions(): Promise<
-  Array<{ id: string; task: string; phase: string; created_at: string }>
+export async function listSessions(projectId?: string): Promise<
+  Array<{ id: string; project_id: string; task: string; phase: string; created_at: string }>
 > {
   const sessions = await loadAllSessions()
-  return sessions.map((s) => ({ id: s.id, task: s.task, phase: s.phase, created_at: s.created_at }))
+  const filtered = projectId ? sessions.filter((s) => s.project_id === projectId) : sessions
+  return filtered.map((s) => ({ id: s.id, project_id: s.project_id, task: s.task, phase: s.phase, created_at: s.created_at }))
 }
 
 export async function clearAllData(): Promise<{ sessions_removed: number }> {

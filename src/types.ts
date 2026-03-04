@@ -38,7 +38,7 @@ export interface UserStory {
 
 export interface Session {
   id: string
-  project_hash: string
+  project_id: string
   task: string
   phase: SessionPhase
   gate: GateResult | null

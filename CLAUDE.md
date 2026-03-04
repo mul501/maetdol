@@ -81,7 +81,7 @@ The interviewer agent (skill-side) inherits the caller's model. The contrarian a
 ## Non-Obvious Details
 
 - **Session ID truncation**: UUIDs are sliced to 12 chars (`randomUUID().slice(0, 12)`). Short enough for human use, long enough to avoid collisions in practice.
-- **project_hash fallback**: If no `project_hash` is provided, the task description itself is hashed (`shortHash(task)`). This lets the system find existing sessions for the same task.
+- **project_id**: Computed by the skill layer as `sha256(git remote URL)[:8]`, falling back to `sha256(cwd)[:8]` if no git remote exists. Passed to the server as `project_id`. If omitted, the server falls back to `shortHash(task)` for backward compatibility.
 - **Auto-unblocking**: When a task completes, `unblockDependents()` automatically moves blocked tasks to `pending` if all their deps are met. Called on both `update` and `next` actions.
 - **Cycle detection**: Task decomposition runs DFS cycle detection before accepting a dependency graph. Circular deps are rejected with an error, not silently broken.
 - **Ambiguity formula**: Round 1: `goal×0.4 + constraints×0.3 + criteria×0.3` (context excluded pre-exploration). Round 2+: `goal×0.35 + constraints×0.25 + criteria×0.25 + context×0.15`. Response includes `weakest_dimension` for targeted interviewing.

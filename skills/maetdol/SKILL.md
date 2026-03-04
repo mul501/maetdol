@@ -15,16 +15,23 @@ session create/resume → gate → [stories] → decompose → [ralph loop per t
 
 The `stories` phase is optional — only for complex tasks with 3+ subtasks. Simple tasks skip directly to `decompose`.
 
+## Step 0: Identify Project
+
+1. Run `git remote get-url origin` in the current working directory.
+2. If successful: project_id = SHA-256 of the URL, first 8 hex chars.
+3. If failed (no git/no remote): project_id = SHA-256 of absolute cwd, first 8 hex chars.
+4. Pass this project_id to all `maetdol_session` calls.
+
 ## Step 1: Session
 
 Determine whether to create a new session or resume an existing one.
 
 **New session:**
-- Call `maetdol_session` with `{ action: "create", task: "<user's task description>" }`.
+- Call `maetdol_session` with `{ action: "create", task: "<user's task description>", project_id: "<project_id>" }`.
 - Store the returned `session_id` for all subsequent calls.
 
 **Resume session:**
-- Call `maetdol_session` with `{ action: "resume", project_hash: "<hash>" }`.
+- Call `maetdol_session` with `{ action: "resume", project_id: "<project_id>" }`.
 - Read the returned `phase`, `current_task_id`, and `iteration` fields.
 - Jump directly to the corresponding step below (skip completed phases).
 

@@ -10,12 +10,13 @@ export function registerTeardownTool(server: McpServer) {
       description: 'Preview or delete all maetdol session data (~/.maetdol/)',
       inputSchema: {
         action: z.enum(['preview', 'confirm']),
+        project_id: z.string().optional(),
       },
     },
-    async ({ action }) => {
+    async ({ action, project_id }) => {
       switch (action) {
         case 'preview': {
-          const sessions = await listSessions()
+          const sessions = await listSessions(project_id)
           return ok({ sessions, total: sessions.length })
         }
 
