@@ -1,11 +1,11 @@
 import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { Session, TasksResult, UserStory } from '../types.js'
+import type { Session, TaskStatus, TasksResult } from '../types.js'
 import { TASK_STATUSES } from '../types.js'
 import { loadSession, saveSession } from '../lib/storage.js'
 import { ok, toolError } from '../lib/response.js'
-
-const MAX_EVIDENCE_LENGTH = 500
+import { MAX_EVIDENCE_LENGTH } from '../lib/constants.js'
+import { validateCriteriaIndices } from '../lib/validation.js'
 
 const TaskItemSchema = z.object({
   id: z.number(),
@@ -58,6 +58,13 @@ export function registerTasksTool(server: McpServer) {
           const cycle = detectDependencyCycle(tasks, 'task')
           if (cycle) return toolError(`Circular dependency detected: ${cycle}`)
 
+          const taskIds = new Set(tasks.map((t) => t.id))
+          for (const t of tasks) {
+            for (const depId of t.depends_on) {
+              if (!taskIds.has(depId)) return toolError(`Task ${t.id} depends on non-existent task ${depId}`)
+            }
+          }
+
           for (const t of tasks) {
             if (t.story_id && !session.stories.some((s) => s.id === t.story_id)) {
               return toolError(`Task ${t.id} references non-existent story_id "${t.story_id}"`)
@@ -97,7 +104,7 @@ export function registerTasksTool(server: McpServer) {
           }
 
           // Auto-unblock dependents
-          unblockDependents(session)
+          unblockByDeps(session.tasks)
 
           // Story auto-status: when task completes, check if story is ready for verification
           if (status === 'completed' && task.story_id) {
@@ -121,7 +128,7 @@ export function registerTasksTool(server: McpServer) {
         }
 
         case 'next': {
-          const changed = unblockDependents(session)
+          const changed = unblockByDeps(session.tasks)
           if (changed) await saveSession(session)
           return ok(buildResult(session))
         }
@@ -132,6 +139,13 @@ export function registerTasksTool(server: McpServer) {
           // Check for circular dependencies among stories
           const storyCycle = detectDependencyCycle(stories, 'story')
           if (storyCycle) return toolError(`Circular story dependency detected: ${storyCycle}`)
+
+          const storyIds = new Set(stories.map((s) => s.id))
+          for (const s of stories) {
+            for (const depId of s.depends_on) {
+              if (!storyIds.has(depId)) return toolError(`Story ${s.id} depends on non-existent story ${depId}`)
+            }
+          }
 
           session.stories = stories.map((s) => ({
             id: s.id,
@@ -158,37 +172,31 @@ export function registerTasksTool(server: McpServer) {
           if (!allDone) return toolError(`Not all tasks in ${story_id} are complete`)
 
           if (criteria_met) {
+            const err = validateCriteriaIndices(criteria_met, story.acceptance_criteria, 'Story')
+            if (err) return toolError(err)
             for (const idx of criteria_met) {
-              if (idx < 0 || idx >= story.acceptance_criteria.length) {
-                return toolError(`Invalid criteria_met index ${idx}. Story has ${story.acceptance_criteria.length} criteria (0-${story.acceptance_criteria.length - 1}).`)
-              }
-            }
-            for (const idx of criteria_met) {
-              story.criteria_results[String(idx)] = true
+              story.criteria_results[idx] = true
             }
           }
           if (evidence) {
             story.evidence = evidence
           }
 
-          const allCriteriaMet = story.acceptance_criteria.every((_, i) => story.criteria_results[String(i)])
+          const allCriteriaMet = story.acceptance_criteria.every((_, i) => story.criteria_results[i])
           story.status = allCriteriaMet ? 'completed' : 'ready_for_verify'
 
           // Auto-unblock dependent stories
           if (story.status === 'completed') {
-            const storyById = new Map(session.stories.map((s) => [s.id, s]))
-            for (const s of session.stories) {
-              if (s.status !== 'blocked') continue
-              const depsMet = s.depends_on.every((depId) => {
-                const dep = storyById.get(depId)
-                return dep && (dep.status === 'completed' || dep.status === 'skipped')
-              })
-              if (depsMet) s.status = 'pending'
-            }
+            unblockByDeps(session.stories)
           }
 
           await saveSession(session)
           return ok({ story, all_criteria_met: allCriteriaMet })
+        }
+
+        default: {
+          const _exhaustive: never = action
+          return toolError(`Unknown action: ${_exhaustive}`)
         }
       }
     },
@@ -212,17 +220,20 @@ function buildResult(session: Session): TasksResult {
   }
 }
 
-function unblockDependents(session: Session): boolean {
-  const byId = new Map(session.tasks.map((t) => [t.id, t]))
+function unblockByDeps<T extends { id: string | number; status: TaskStatus; depends_on: (string | number)[] }>(
+  items: T[],
+): boolean {
+  const byId = new Map(items.map((item) => [item.id, item]))
   let changed = false
-  for (const task of session.tasks) {
-    if (task.status !== 'blocked') continue
-    const allDepsMet = task.depends_on.every((depId) => {
-      const dep = byId.get(depId)
-      return dep && (dep.status === 'completed' || dep.status === 'skipped')
-    })
-    if (allDepsMet) {
-      task.status = 'pending'
+  for (const item of items) {
+    if (item.status !== 'blocked') continue
+    if (
+      item.depends_on.every((depId) => {
+        const dep = byId.get(depId)
+        return dep && (dep.status === 'completed' || dep.status === 'skipped')
+      })
+    ) {
+      item.status = 'pending' as T['status']
       changed = true
     }
   }

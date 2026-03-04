@@ -88,6 +88,11 @@ export function registerSessionTool(server: McpServer) {
           await saveSession(completed)
           return ok({ session: completed, is_resumed: false, resume_point: null })
         }
+
+        default: {
+          const _exhaustive: never = action
+          return toolError(`Unknown action: ${_exhaustive}`)
+        }
       }
     },
   )

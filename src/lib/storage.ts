@@ -8,22 +8,23 @@ const SESSIONS_DIR = join(BASE_DIR, 'sessions')
 
 const dirReady = mkdir(SESSIONS_DIR, { recursive: true })
 
+function migrateStringKeysToNumber(record: Record<string | number, boolean>): Record<number, boolean> {
+  const result: Record<number, boolean> = {}
+  for (const [key, value] of Object.entries(record)) {
+    result[Number(key)] = value
+  }
+  return result
+}
+
 function normalizeSession(raw: unknown): Session {
   const s = raw as Record<string, unknown>
-  if ('project_hash' in s) {
-    if (!('project_id' in s)) {
-      s.project_id = s.project_hash
-    }
-    delete s.project_hash
-  }
-
   const session = s as unknown as Session
 
   session.stories ??= []
 
   for (const story of session.stories) {
     story.acceptance_criteria ??= []
-    story.criteria_results ??= {}
+    story.criteria_results = migrateStringKeysToNumber(story.criteria_results ?? {})
     story.evidence ??= null
     story.depends_on ??= []
     story.status ??= 'pending'
@@ -33,7 +34,7 @@ function normalizeSession(raw: unknown): Session {
     for (const task of session.tasks) {
       task.verify_result ??= null
       task.acceptance_criteria ??= []
-      task.criteria_results ??= {}
+      task.criteria_results = migrateStringKeysToNumber(task.criteria_results ?? {})
       task.evidence ??= null
       task.story_id ??= null
     }

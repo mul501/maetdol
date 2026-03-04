@@ -55,7 +55,7 @@ export function registerScoreAmbiguityTool(server: McpServer) {
           refined_task: context,
           rounds: [],
         }
-        if (result.passed) {
+        if (result.passed && session.phase === 'gate') {
           session.phase = 'stories'
         }
         await saveSession(session)

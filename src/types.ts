@@ -19,7 +19,7 @@ export interface TaskItem {
   error_history: Array<{ hash: string; summary: string }>
   verify_result: 'pass' | 'fail' | null
   acceptance_criteria: string[]
-  criteria_results: Record<string, boolean>
+  criteria_results: Record<number, boolean>
   evidence: string | null
   story_id: string | null
 }
@@ -30,7 +30,7 @@ export interface UserStory {
   id: string
   title: string
   acceptance_criteria: string[]
-  criteria_results: Record<string, boolean>
+  criteria_results: Record<number, boolean>
   evidence: string | null
   depends_on: string[]
   status: TaskStatus
