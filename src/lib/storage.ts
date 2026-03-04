@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises'
+import { readFile, writeFile, mkdir, readdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
 import type { Session } from '../types.js'
@@ -53,7 +53,7 @@ export async function saveSession(session: Session): Promise<void> {
   await writeFile(path, JSON.stringify(toWrite, null, 2), 'utf-8')
 }
 
-export async function findActiveSession(projectHash: string): Promise<Session | null> {
+async function loadAllSessions(): Promise<Session[]> {
   await dirReady
   const files = (await readdir(SESSIONS_DIR)).filter((f) => f.endsWith('.json'))
   const sessions = await Promise.all(
@@ -66,5 +66,25 @@ export async function findActiveSession(projectHash: string): Promise<Session | 
       }
     }),
   )
-  return sessions.find((s) => s != null && s.project_hash === projectHash && s.phase !== 'completed') ?? null
+  return sessions.filter((s): s is Session => s !== null)
+}
+
+export async function findActiveSession(projectHash: string): Promise<Session | null> {
+  const sessions = await loadAllSessions()
+  return sessions.find((s) => s.project_hash === projectHash && s.phase !== 'completed') ?? null
+}
+
+export async function listSessions(): Promise<
+  Array<{ id: string; task: string; phase: string; created_at: string }>
+> {
+  const sessions = await loadAllSessions()
+  return sessions.map((s) => ({ id: s.id, task: s.task, phase: s.phase, created_at: s.created_at }))
+}
+
+export async function clearAllData(): Promise<{ sessions_removed: number }> {
+  await dirReady
+  const files = (await readdir(SESSIONS_DIR)).filter((f) => f.endsWith('.json'))
+  const count = files.length
+  await rm(BASE_DIR, { recursive: true, force: true })
+  return { sessions_removed: count }
 }
