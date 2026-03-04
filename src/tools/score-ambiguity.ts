@@ -3,8 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { AmbiguityResult } from '../types.js'
 import { loadSession, saveSession } from '../lib/storage.js'
 import { ok, toolError } from '../lib/response.js'
-
-const AMBIGUITY_THRESHOLD = 0.3
+import { AMBIGUITY_THRESHOLD } from '../lib/constants.js'
 
 export function registerScoreAmbiguityTool(server: McpServer) {
   server.registerTool(
@@ -53,7 +52,6 @@ export function registerScoreAmbiguityTool(server: McpServer) {
           score: result.ambiguity,
           passed: result.passed,
           refined_task: context,
-          rounds: [],
         }
         if (result.passed && session.phase === 'gate') {
           session.phase = 'stories'

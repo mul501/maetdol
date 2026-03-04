@@ -1,11 +1,11 @@
 import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { Session, TaskStatus, TasksResult } from '../types.js'
+import type { Session, TaskItem, TaskStatus, TasksResult } from '../types.js'
 import { TASK_STATUSES } from '../types.js'
 import { loadSession, saveSession } from '../lib/storage.js'
 import { ok, toolError } from '../lib/response.js'
 import { MAX_EVIDENCE_LENGTH } from '../lib/constants.js'
-import { validateCriteriaIndices } from '../lib/validation.js'
+import { validateDependencyRefs, applyCriteriaMet } from '../lib/validation.js'
 
 const TaskItemSchema = z.object({
   id: z.number(),
@@ -58,12 +58,8 @@ export function registerTasksTool(server: McpServer) {
           const cycle = detectDependencyCycle(tasks, 'task')
           if (cycle) return toolError(`Circular dependency detected: ${cycle}`)
 
-          const taskIds = new Set(tasks.map((t) => t.id))
-          for (const t of tasks) {
-            for (const depId of t.depends_on) {
-              if (!taskIds.has(depId)) return toolError(`Task ${t.id} depends on non-existent task ${depId}`)
-            }
-          }
+          const depErr = validateDependencyRefs(tasks, 'Task')
+          if (depErr) return toolError(depErr)
 
           for (const t of tasks) {
             if (t.story_id && !session.stories.some((s) => s.id === t.story_id)) {
@@ -104,17 +100,15 @@ export function registerTasksTool(server: McpServer) {
           }
 
           // Auto-unblock dependents
-          unblockByDeps(session.tasks)
+          if (status === 'completed' || status === 'skipped') {
+            unblockByDeps(session.tasks)
+          }
 
           // Story auto-status: when task completes, check if story is ready for verification
           if (status === 'completed' && task.story_id) {
             const story = session.stories.find((s) => s.id === task.story_id)
-            if (story && story.status !== 'completed') {
-              const storyTasks = session.tasks.filter((t) => t.story_id === story.id)
-              const allDone = storyTasks.every((t) => t.status === 'completed' || t.status === 'skipped')
-              if (allDone) {
-                story.status = 'ready_for_verify' // awaiting story-level verification
-              }
+            if (story && story.status !== 'completed' && areStoryTasksDone(session.tasks, story.id)) {
+              story.status = 'ready_for_verify' // awaiting story-level verification
             }
           }
 
@@ -140,12 +134,8 @@ export function registerTasksTool(server: McpServer) {
           const storyCycle = detectDependencyCycle(stories, 'story')
           if (storyCycle) return toolError(`Circular story dependency detected: ${storyCycle}`)
 
-          const storyIds = new Set(stories.map((s) => s.id))
-          for (const s of stories) {
-            for (const depId of s.depends_on) {
-              if (!storyIds.has(depId)) return toolError(`Story ${s.id} depends on non-existent story ${depId}`)
-            }
-          }
+          const storyDepErr = validateDependencyRefs(stories, 'Story')
+          if (storyDepErr) return toolError(storyDepErr)
 
           session.stories = stories.map((s) => ({
             id: s.id,
@@ -167,16 +157,13 @@ export function registerTasksTool(server: McpServer) {
           if (!story) return toolError(`Story ${story_id} not found`)
 
           // Check all tasks in this story are done
-          const storyTasks = session.tasks.filter((t) => t.story_id === story.id)
-          const allDone = storyTasks.every((t) => t.status === 'completed' || t.status === 'skipped')
-          if (!allDone) return toolError(`Not all tasks in ${story_id} are complete`)
+          if (!areStoryTasksDone(session.tasks, story.id)) {
+            return toolError(`Not all tasks in ${story_id} are complete`)
+          }
 
           if (criteria_met) {
-            const err = validateCriteriaIndices(criteria_met, story.acceptance_criteria, 'Story')
+            const err = applyCriteriaMet(criteria_met, story.acceptance_criteria, story.criteria_results, 'Story')
             if (err) return toolError(err)
-            for (const idx of criteria_met) {
-              story.criteria_results[idx] = true
-            }
           }
           if (evidence) {
             story.evidence = evidence
@@ -201,6 +188,12 @@ export function registerTasksTool(server: McpServer) {
       }
     },
   )
+}
+
+function areStoryTasksDone(tasks: TaskItem[], storyId: string): boolean {
+  return tasks
+    .filter((t) => t.story_id === storyId)
+    .every((t) => t.status === 'completed' || t.status === 'skipped')
 }
 
 function buildResult(session: Session): TasksResult {

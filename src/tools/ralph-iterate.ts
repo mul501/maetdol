@@ -4,12 +4,8 @@ import type { RalphIterateResult } from '../types.js'
 import { loadSession, saveSession } from '../lib/storage.js'
 import { ok, toolError } from '../lib/response.js'
 import { redactSecrets } from '../lib/redact.js'
-import { MAX_EVIDENCE_LENGTH } from '../lib/constants.js'
-import { validateCriteriaIndices } from '../lib/validation.js'
-
-const MAX_TASK_ITERATIONS = 5
-const MAX_SESSION_ITERATIONS = 30
-const STAGNATION_THRESHOLD = 3
+import { MAX_EVIDENCE_LENGTH, MAX_TASK_ITERATIONS, MAX_SESSION_ITERATIONS, STAGNATION_THRESHOLD } from '../lib/constants.js'
+import { applyCriteriaMet } from '../lib/validation.js'
 
 export function registerRalphIterateTool(server: McpServer) {
   server.registerTool(
@@ -51,11 +47,8 @@ export function registerRalphIterateTool(server: McpServer) {
       }
 
       if (criteria_met) {
-        const err = validateCriteriaIndices(criteria_met, task.acceptance_criteria, 'Task')
+        const err = applyCriteriaMet(criteria_met, task.acceptance_criteria, task.criteria_results, 'Task')
         if (err) return toolError(err)
-        for (const idx of criteria_met) {
-          task.criteria_results[idx] = true
-        }
       }
 
       // Increment iteration

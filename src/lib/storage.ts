@@ -1,7 +1,7 @@
 import { readFile, writeFile, mkdir, readdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
-import type { Session } from '../types.js'
+import type { Session, SessionPhase } from '../types.js'
 
 const BASE_DIR = join(homedir(), '.maetdol')
 const SESSIONS_DIR = join(BASE_DIR, 'sessions')
@@ -84,7 +84,7 @@ export async function findActiveSession(projectId: string): Promise<Session | nu
 }
 
 export async function listSessions(projectId?: string): Promise<
-  Array<{ id: string; project_id: string; task: string; phase: string; created_at: string }>
+  Array<{ id: string; project_id: string; task: string; phase: SessionPhase; created_at: string }>
 > {
   const sessions = await loadAllSessions()
   const filtered = projectId ? sessions.filter((s) => s.project_id === projectId) : sessions
@@ -96,5 +96,6 @@ export async function clearAllData(): Promise<{ sessions_removed: number }> {
   const files = (await readdir(SESSIONS_DIR)).filter((f) => f.endsWith('.json'))
   const count = files.length
   await rm(BASE_DIR, { recursive: true, force: true })
+  await mkdir(SESSIONS_DIR, { recursive: true })
   return { sessions_removed: count }
 }

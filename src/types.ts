@@ -1,10 +1,11 @@
 // ── Session ──────────────────────────────────────────────
 
+export type VerifyResult = 'pass' | 'fail' | null
+
 export interface GateResult {
   score: number
   passed: boolean
   refined_task: string
-  rounds: Array<{ question: string; answer: string }>
 }
 
 export const TASK_STATUSES = ['pending', 'in_progress', 'completed', 'blocked', 'skipped', 'ready_for_verify'] as const
@@ -17,7 +18,7 @@ export interface TaskItem {
   depends_on: number[]
   iterations: number
   error_history: Array<{ hash: string; summary: string }>
-  verify_result: 'pass' | 'fail' | null
+  verify_result: VerifyResult
   acceptance_criteria: string[]
   criteria_results: Record<number, boolean>
   evidence: string | null
@@ -75,7 +76,7 @@ export interface RalphIterateResult {
   stagnation_detected: boolean
   consecutive_same_error: number
   session_total_iterations: number
-  verify_result: 'pass' | 'fail' | null
+  verify_result: VerifyResult
   evidence: string | null
 }
 
