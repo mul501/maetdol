@@ -19,8 +19,10 @@ Sub-commands (work standalone or within a session):
 
 ```
 /maetdol:gate "Add user authentication"    # Check ambiguity only
+/maetdol:design                             # Requirements analysis and architecture
 /maetdol:unstuck                           # Break out of a stuck loop
 /maetdol:setup                             # Install and verify plugin
+/maetdol:teardown                          # Remove session data and uninstall
 ```
 
 ## Install
