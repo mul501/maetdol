@@ -113,9 +113,9 @@ Iterate through subtasks one by one.
 
 ## Step 4b: Story Verification (if stories exist)
 
-When all tasks in a story complete, the server sets the story status to `in_progress` (awaiting verification).
+When all tasks in a story complete, the server sets the story status to `ready_for_verify` (awaiting verification).
 
-1. For each story with status `in_progress`:
+1. For each story with status `ready_for_verify`:
    - Verify each story-level `acceptance_criteria` one by one.
    - Call `maetdol_tasks` with `{ action: "verify_story", session_id: "<id>", story_id: "US-001", criteria_met: [0, 1, 2], evidence: "<actual output>" }`.
 2. If story criteria are not fully met:

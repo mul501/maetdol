@@ -5,5 +5,5 @@ export function ok(data: object) {
 
 /** Standard MCP tool error response */
 export function toolError(message: string) {
-  return { content: [{ type: 'text' as const, text: JSON.stringify({ error: message }) }], isError: true }
+  return { content: [{ type: 'text' as const, text: message }], isError: true }
 }

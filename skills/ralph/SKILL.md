@@ -120,7 +120,7 @@ This ensures the same logical error produces the same hash even if surface detai
 
 ## Story Verification
 
-When a story's tasks are all completed/skipped, the server marks the story as `in_progress` (awaiting verification):
+When a story's tasks are all completed/skipped, the server marks the story as `ready_for_verify` (awaiting verification):
 
 1. Check each story-level acceptance criterion against actual output.
 2. Record results via `maetdol_tasks` with `{ action: "verify_story", session_id, story_id, criteria_met: [<indices>], evidence: "<actual output>" }`.

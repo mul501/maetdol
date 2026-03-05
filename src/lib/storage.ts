@@ -92,16 +92,18 @@ async function loadAllSessions(): Promise<Session[]> {
 export async function findActiveSession(projectId: string): Promise<Session | null> {
   await dirReady
   const files = (await readdir(SESSIONS_DIR)).filter((f) => f.endsWith('.json'))
-  for (const file of files) {
-    try {
-      const raw = await readFile(join(SESSIONS_DIR, file), 'utf-8')
-      const session = normalizeSession(JSON.parse(raw))
-      if (session.project_id === projectId && session.phase !== PHASE.completed) return session
-    } catch (err) {
-      console.error(`maetdol: skipping corrupt session file ${file}:`, err instanceof Error ? err.message : err)
-    }
-  }
-  return null
+  const sessions = await Promise.all(
+    files.map(async (file) => {
+      try {
+        const raw = await readFile(join(SESSIONS_DIR, file), 'utf-8')
+        return normalizeSession(JSON.parse(raw))
+      } catch (err) {
+        console.error(`maetdol: skipping corrupt session file ${file}:`, err instanceof Error ? err.message : err)
+        return null
+      }
+    }),
+  )
+  return sessions.find((s): s is Session => s !== null && s.project_id === projectId && s.phase !== PHASE.completed) ?? null
 }
 
 export async function listSessions(projectId?: string): Promise<

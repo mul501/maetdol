@@ -5,7 +5,7 @@ import { TASK_STATUSES } from '../types.js'
 import { loadSession, saveSession } from '../lib/storage.js'
 import { ok, toolError } from '../lib/response.js'
 import { MAX_EVIDENCE_LENGTH, PHASE } from '../lib/constants.js'
-import { validateDependencyRefs, applyCriteriaMet } from '../lib/validation.js'
+import { validateDependencyRefs, applyCriteriaMet, detectDependencyCycle } from '../lib/validation.js'
 
 const TaskItemSchema = z.object({
   id: z.number(),
@@ -102,8 +102,11 @@ export function registerTasksTool(server: McpServer) {
             session.current_task_id = task_id
           }
 
-          // Auto-unblock dependents
+          // Clear current_task_id when task is done
           if (status === 'completed' || status === 'skipped') {
+            if (session.current_task_id === task_id) {
+              session.current_task_id = null
+            }
             unblockByDeps(session.tasks)
           }
 
@@ -240,35 +243,4 @@ function unblockByDeps<T extends { id: string | number; status: TaskStatus; depe
     }
   }
   return changed
-}
-
-function detectDependencyCycle<T extends string | number>(
-  items: Array<{ id: T; depends_on: T[] }>,
-  label: string,
-): string | null {
-  const visited = new Set<T>()
-  const inStack = new Set<T>()
-  const itemMap = new Map(items.map((item) => [item.id, item]))
-
-  function dfs(id: T): string | null {
-    if (inStack.has(id)) return `${label} ${id}`
-    if (visited.has(id)) return null
-    visited.add(id)
-    inStack.add(id)
-    const item = itemMap.get(id)
-    if (item) {
-      for (const dep of item.depends_on) {
-        const cycle = dfs(dep)
-        if (cycle) return cycle
-      }
-    }
-    inStack.delete(id)
-    return null
-  }
-
-  for (const item of items) {
-    const cycle = dfs(item.id)
-    if (cycle) return cycle
-  }
-  return null
 }

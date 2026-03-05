@@ -18,7 +18,7 @@ export function registerRalphIterateTool(server: McpServer) {
         session_id: z.string(),
         task_id: z.number(),
         error_hash: z.string().optional().describe('SHA-256 prefix (8 chars) of the error output'),
-        error_summary: z.string().optional().describe('Human-readable error summary'),
+        error_summary: z.string().max(500).optional().describe('Human-readable error summary'),
         verify_result: z.enum(['pass', 'fail']).optional().describe('Result of the verification step for this iteration'),
         evidence: z.string().max(MAX_EVIDENCE_LENGTH).optional().describe('Verification evidence (actual terminal output). Required when verify_result is "pass"'),
         criteria_met: z.array(z.number()).optional().describe('Indices of acceptance_criteria verified this iteration'),
