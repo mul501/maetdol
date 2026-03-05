@@ -1,6 +1,6 @@
 ---
 name: setup
-description: Install dependencies and verify maetdol plugin
+description: Verify maetdol plugin setup
 ---
 
 # Setup Skill
@@ -33,18 +33,13 @@ Call `maetdol_session` with `{ action: "create", task: "setup-verify" }` to conf
 
 If this **succeeds**, skip to Step 4 (Clean Up).
 
-If this **fails**, proceed to Step 3 (Install Dependencies).
+If this **fails**, proceed to Step 3 (Troubleshoot).
 
-### 3. Install Dependencies (only if Step 2 failed)
+### 3. Troubleshoot (only if Step 2 failed)
 
-This step is for **local development** users only. Marketplace users should never need this — `dist/server.js` is pre-bundled.
+MCP server connection failed. Ask the user to restart Claude Code — MCP servers may require a restart after plugin installation.
 
-Run `npm install && npm run build` in the plugin directory, then retry the MCP server call from Step 2.
-
-If it still fails, report the error and suggest troubleshooting steps:
-- Check that `npm install` completed successfully
-- Verify the MCP server configuration in `mcp-config.json`
-- Try running `npm run dev` manually to see server output
+After restart, run `/maetdol:setup` again.
 
 ### 4. Clean Up Test Session
 
