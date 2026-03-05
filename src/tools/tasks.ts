@@ -13,6 +13,7 @@ const TaskItemSchema = z.object({
   depends_on: z.array(z.number()).default([]),
   acceptance_criteria: z.array(z.string()).default([]),
   story_id: z.string().nullable().default(null),
+  testable: z.boolean().default(false),
 })
 
 const StorySchema = z.object({
@@ -79,6 +80,8 @@ export function registerTasksTool(server: McpServer) {
             criteria_results: {},
             evidence: null,
             story_id: t.story_id,
+            testable: t.testable,
+            tdd_phase: null,
           }))
           session.phase = PHASE.ralph
           await saveSession(session)

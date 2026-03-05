@@ -82,8 +82,12 @@ Break the refined task (or each story) into executable subtasks.
    - **Forbidden**: "works correctly", "implementation complete", or other vague phrases.
    - Simple tasks (typo fixes, etc.) may have an empty criteria array — ralph will verify by inspection.
 3. If stories exist, link each task to its parent story via `story_id`.
-4. Call `maetdol_tasks` with `{ action: "decompose", session_id: "<id>", tasks: [{ id, title, depends_on, acceptance_criteria, story_id }] }`.
-5. The server stores the task list and returns task IDs with criteria progress tracking.
+4. Tag each task as `testable`:
+   - Code changes (`.ts`, `.py`, `.go`, etc.) → `testable: true`
+   - Documentation, config, or asset changes → `testable: false`
+   - Refactoring with existing test coverage → `testable: false` (existing tests act as guard)
+5. Call `maetdol_tasks` with `{ action: "decompose", session_id: "<id>", tasks: [{ id, title, depends_on, acceptance_criteria, story_id, testable }] }`.
+6. The server stores the task list and returns task IDs with criteria progress tracking.
 
 ## Step 4: Ralph Loop (Execute Each Task)
 
@@ -93,15 +97,19 @@ Iterate through subtasks one by one.
 
 1. Call `maetdol_tasks` with `{ action: "next", session_id: "<id>" }` to get the next pending task.
 2. If no tasks remain, go to Step 4b (or Step 5 if no stories).
-3. **Execute** the task using standard Claude Code tools (Read, Edit, Write, Bash, etc.).
-4. **Verify** the result — run tests, check output, confirm the change is correct.
-5. **Record** the result via `maetdol_ralph_iterate`:
+3. **If the task is testable**, run the TDD cycle (see ralph skill's "TDD Flow" section):
+   - RED: write failing test → `ralph_iterate` with `tdd_phase="red"`
+   - GREEN: minimal implementation → `ralph_iterate` with `tdd_phase="green"`
+   - REFACTOR: clean up → `ralph_iterate` with `tdd_phase="refactor"`
+4. **If the task is not testable**, execute using standard Claude Code tools (Read, Edit, Write, Bash, etc.).
+5. **Verify** the result — run tests, check output, confirm the change is correct.
+6. **Record** the result via `maetdol_ralph_iterate`:
    - **Pass:** `{ session_id: "<id>", task_id: <id>, verify_result: "pass", evidence: "<actual output>", criteria_met: [0, 2] }`.
    - **Fail:** `{ session_id: "<id>", task_id: <id>, verify_result: "fail", error_hash: "<sha256 prefix>", error_summary: "<one-line description>" }`.
-6. **On pass:** Call `maetdol_tasks` with `{ action: "update", session_id: "<id>", task_id: <id>, status: "completed" }`. Return to step 4.1.
-7. **On fail + should_continue:** Fix the issue and go to step 4.4.
-8. **On fail + stagnation detected:** Invoke the **unstuck** skill to get alternative approaches, then retry from step 4.4.
-9. **On fail + max iterations (5) reached:** Call `maetdol_tasks` with `{ action: "update", session_id: "<id>", task_id: <id>, status: "skipped" }`. Log the reason and move to the next task.
+7. **On pass:** Call `maetdol_tasks` with `{ action: "update", session_id: "<id>", task_id: <id>, status: "completed" }`. Return to step 4.1.
+8. **On fail + should_continue:** Fix the issue and go to step 4.5.
+9. **On fail + stagnation detected:** Invoke the **unstuck** skill to get alternative approaches, then retry from step 4.5.
+10. **On fail + max iterations (5) reached:** Call `maetdol_tasks` with `{ action: "update", session_id: "<id>", task_id: <id>, status: "skipped" }`. Log the reason and move to the next task.
 
 ## Step 4b: Story Verification (if stories exist)
 

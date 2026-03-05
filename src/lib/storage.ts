@@ -45,6 +45,8 @@ function normalizeSession(raw: unknown): Session {
       task.criteria_results = migrateStringKeysToNumber(task.criteria_results ?? {})
       task.evidence ??= null
       task.story_id ??= null
+      task.testable ??= false
+      task.tdd_phase ??= null
     }
   }
 

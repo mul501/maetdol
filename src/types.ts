@@ -22,6 +22,9 @@ export interface DesignResult {
 export const TASK_STATUSES = ['pending', 'in_progress', 'completed', 'blocked', 'skipped', 'ready_for_verify'] as const
 export type TaskStatus = (typeof TASK_STATUSES)[number]
 
+export const TDD_PHASES = ['red', 'green', 'refactor'] as const
+export type TddPhase = (typeof TDD_PHASES)[number]
+
 export interface TaskItem {
   id: number
   title: string
@@ -34,6 +37,8 @@ export interface TaskItem {
   criteria_results: Record<number, boolean>
   evidence: string | null
   story_id: string | null
+  testable: boolean
+  tdd_phase: TddPhase | null
 }
 
 export type SessionPhase = (typeof PHASE)[keyof typeof PHASE]
@@ -90,6 +95,8 @@ export interface RalphIterateResult {
   session_total_iterations: number
   verify_result: VerifyResult
   evidence: string | null
+  tdd_phase: TddPhase | null
+  tdd_warning: string | null
 }
 
 export type StagnationType = 'spinning' | 'oscillation'

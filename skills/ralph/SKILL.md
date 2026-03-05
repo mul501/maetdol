@@ -71,6 +71,44 @@ When called from the maetdol orchestration skill, use server-side tracking:
 - The server's response indicates whether stagnation is detected.
 - Call `maetdol_detect_stagnation` with `{ error_hashes: [<recent hashes>], output_hashes: [<recent output hashes>] }` for explicit stagnation checks if needed.
 
+## TDD Flow (testable tasks)
+
+For tasks tagged `testable: true`, follow the RED→GREEN→REFACTOR cycle before the normal verify flow:
+
+### 1. RED — Write a failing test
+
+- Write the minimum test that covers the task's `acceptance_criteria`.
+- Run the test — it **must fail**.
+- Call `maetdol_ralph_iterate` with `{ tdd_phase: "red", verify_result: "fail", error_hash, error_summary }`.
+- The server records the expected failure without adding it to error history.
+- If the test passes: the test is wrong. Fix the test and retry RED.
+
+### 2. GREEN — Minimal implementation
+
+- Write the simplest code that makes the test pass. No over-engineering.
+- Run the test — it **must pass**.
+- Call `maetdol_ralph_iterate` with `{ tdd_phase: "green", verify_result: "pass", evidence }`.
+- On failure: normal fix loop applies (stagnation detection active).
+
+### 3. REFACTOR — Clean up
+
+- Remove duplication, improve naming, simplify structure.
+- Run the test — it **must still pass**.
+- Call `maetdol_ralph_iterate` with `{ tdd_phase: "refactor", verify_result: "pass", evidence }`.
+- On failure: revert the refactoring and retry.
+
+### 4. VERIFY — Acceptance criteria
+
+After the TDD cycle completes (`tdd_phase` resets to `null`), proceed with the normal acceptance criteria verification flow.
+
+## TDD Anti-patterns
+
+- **Test passes immediately in RED** → You skipped RED. The test doesn't verify what you think.
+- **Mocking the thing you're testing** → Test real behavior, not mock behavior.
+- **Writing tests after implementation** → That's not TDD. Write the test first.
+- **Modifying tests to make them pass** → Unless the test itself is buggy, fix the implementation.
+- **Giant test in RED** → Write the smallest possible failing test. One assertion.
+
 ## Error Hash Computation
 
 To produce consistent hashes:
