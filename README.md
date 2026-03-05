@@ -21,7 +21,7 @@ Sub-commands (work standalone or within a session):
 /maetdol:gate "Add user authentication"    # Check ambiguity only
 /maetdol:design                             # Requirements analysis and architecture
 /maetdol:unstuck                           # Break out of a stuck loop
-/maetdol:setup                             # Install and verify plugin
+/maetdol:setup                             # Verify plugin setup
 /maetdol:teardown                          # Remove session data and uninstall
 ```
 
@@ -53,6 +53,8 @@ npm run dev
 | `maetdol_score_ambiguity` | Ambiguity scoring (accepts pre-computed scores) |
 | `maetdol_ralph_iterate` | Per-task iteration tracking and stagnation detection |
 | `maetdol_detect_stagnation` | Hash-based spinning/oscillation pattern detection |
+| `maetdol_design` | Design decision recording for a session |
+| `maetdol_teardown` | Session data preview and deletion |
 
 ## Architecture
 

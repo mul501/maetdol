@@ -1,6 +1,6 @@
 ---
 name: maetdol:setup
-description: Install dependencies and verify maetdol plugin
+description: Verify maetdol plugin setup
 skill: setup
 ---
 
