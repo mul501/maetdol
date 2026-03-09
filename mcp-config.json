@@ -2,8 +2,7 @@
   "mcpServers": {
     "maetdol": {
       "command": "node",
-      "args": ["dist/server.js"],
-      "cwd": "${CLAUDE_PLUGIN_ROOT}"
+      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/server.js"]
     }
   }
 }
