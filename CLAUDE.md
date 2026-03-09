@@ -23,6 +23,7 @@ npm run typecheck  # tsc --noEmit
 /maetdol "task"    # Full pipeline — gate → decompose → ralph → verify
 /maetdol-gate      # Check ambiguity only
 /maetdol-design    # Requirements analysis and architecture design
+/maetdol-run       # Execute from current phase through completion
 /maetdol-unstuck   # Break out of a stuck loop
 ```
 

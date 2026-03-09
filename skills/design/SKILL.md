@@ -84,7 +84,7 @@ Output the design summary in a clear format:
 - <any notable risks>
 ```
 
-Ask the user to confirm or adjust before proceeding. This is the **only user checkpoint** in the entire maetdol pipeline. After the user confirms, return control to the orchestrator without asking any additional questions.
+Ask the user to confirm or adjust before proceeding. This is the **only user checkpoint** in the entire maetdol pipeline. After the user confirms, call `maetdol_design` to record the design (Step 5). Then instruct the user: "Design recorded. Run `/maetdol-run` to start the remaining pipeline (decompose → ralph → verify)."
 
 ### 5. Record Design
 

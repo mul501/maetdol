@@ -64,6 +64,8 @@ After the gate passes, the session is in `design` phase. Run the **design** skil
 3. **Full design**: Follow the design skill flow — analyze the codebase, propose architecture, present to user, then call `maetdol_design` with the results.
 4. The server advances the phase to `stories`.
 
+After design completes, inform the user they can start execution with `/maetdol-run`. When called from within the `/maetdol` pipeline directly, automatically continue with the `/maetdol-run` flow.
+
 ## Step 3a: Stories (optional — structure requirements as User Stories)
 
 For complex tasks that will decompose into 3+ subtasks, structure the refined requirements into User Stories first. **Skip this step for simple tasks (1-2 subtasks) — go directly to Step 3b.**
