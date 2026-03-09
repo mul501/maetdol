@@ -84,7 +84,7 @@ Output the design summary in a clear format:
 - <any notable risks>
 ```
 
-Ask the user to confirm or adjust before proceeding.
+Ask the user to confirm or adjust before proceeding. This is the **only user checkpoint** in the entire maetdol pipeline. After the user confirms, return control to the orchestrator without asking any additional questions.
 
 ### 5. Record Design
 

@@ -15,6 +15,10 @@ session create/resume → gate → [design] → [stories] → decompose → [ral
 
 The `design` phase is optional — simple/clear tasks can skip it. The `stories` phase is optional — only for complex tasks with 3+ subtasks. Simple tasks skip directly to `decompose`.
 
+## Execution Model
+
+Design(Step 2.5)이 파이프라인의 **유일한 사용자 체크포인트**다. 사용자가 design을 승인하면, 이후 모든 phase(Stories → Decompose → Ralph → Verify → Complete)는 **중단 없이 연속 실행**한다. "계속할까요?", "시작할까요?", "진행해도 될까요?" 류의 확인 질문을 절대 하지 않는다.
+
 ## Step 0: Identify Project
 
 1. Run `git remote get-url origin` in the current working directory.

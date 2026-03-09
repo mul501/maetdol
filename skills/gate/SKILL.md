@@ -45,23 +45,33 @@ After scoring, pass the scores to `maetdol_score_ambiguity` which computes the w
    - **Passed:** Output the refined requirements. Done.
    - **Not passed:** Continue to clarification.
 
+### Common: Presenting Interviewer Questions
+
+After the interviewer returns its structured response:
+
+1. Parse the response (Q1, Q2, ...). Each question has `type`, `question`, `reason`, and optionally `options`.
+2. Present **all questions at once** using a single `AskUserQuestion` call:
+   - Format each question with its number, question text, and reason.
+   - For `choice` type questions, list the numbered options below the question.
+   - For `open` type questions, indicate free-text input is expected.
+3. Collect the user's answers.
+4. Assemble updated context: original task + all Q&A so far.
+
 ### Round 2: Clarification + Contrarian Challenge
 
 1. Spawn the **interviewer** agent with:
    - The ambiguity feedback from the scoring response.
    - "현재 가장 낮은 점수 dimension은 `{weakest_dimension}` ({score})" so it targets the weakest area.
    - "이번 라운드에서는 Contrarian challenge도 수행하라."
-2. The interviewer asks the user pointed clarifying questions and presents 1-2 contrarian challenges.
-3. Collect the user's answers.
-4. Assemble updated context: original task + all Q&A so far.
-5. Identify `relevant_files` during codebase exploration:
+2. Follow the "Presenting Interviewer Questions" process above.
+3. Identify `relevant_files` during codebase exploration:
    - Use Grep with task-related keywords to find relevant source files.
    - Collect file paths the interviewer explored or referenced.
    - Include only files directly relevant to the task (not every file in the project).
-6. Re-score the task yourself with the new context. Now score `context_clarity` properly based on codebase exploration.
-7. Call `maetdol_score_ambiguity` with `{ context: "<updated context>", round: 2, goal, constraints, criteria, context_clarity, suggestions, project_type, relevant_files }`.
-8. **Passed:** Output refined requirements. Done.
-9. **Not passed:** Continue to round 3.
+4. Re-score the task yourself with the new context. Now score `context_clarity` properly based on codebase exploration.
+5. Call `maetdol_score_ambiguity` with `{ context: "<updated context>", round: 2, goal, constraints, criteria, context_clarity, suggestions, project_type, relevant_files }`.
+6. **Passed:** Output refined requirements. Done.
+7. **Not passed:** Continue to round 3.
 
 ### Round 3: Closing + Simplifier Challenge
 
@@ -69,13 +79,11 @@ After scoring, pass the scores to `maetdol_score_ambiguity` which computes the w
    - The ambiguity feedback from the scoring response.
    - "현재 가장 낮은 점수 dimension은 `{weakest_dimension}` ({score})".
    - "이번 라운드에서는 Simplifier challenge도 수행하라."
-2. The interviewer confirms understanding, resolves remaining ambiguity, and challenges scope simplification.
-3. Collect the user's answers.
-4. Assemble updated context: original task + all Q&A so far.
-5. Re-score with `context_clarity`.
-6. Call `maetdol_score_ambiguity` with `{ context: "<updated context>", round: 3, goal, constraints, criteria, context_clarity, suggestions, project_type, relevant_files }`.
-7. **Passed:** Output refined requirements. Done.
-8. **Not passed:** Output the best requirements available. List remaining ambiguities as explicit assumptions.
+2. Follow the "Presenting Interviewer Questions" process above.
+3. Re-score with `context_clarity`.
+4. Call `maetdol_score_ambiguity` with `{ context: "<updated context>", round: 3, goal, constraints, criteria, context_clarity, suggestions, project_type, relevant_files }`.
+5. **Passed:** Output refined requirements. Done.
+6. **Not passed:** Output the best requirements available. List remaining ambiguities as explicit assumptions.
 
 ### Output Format
 

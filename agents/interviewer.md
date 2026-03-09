@@ -53,22 +53,36 @@ Use these tools to explore the codebase before asking questions. Ground your que
 
 ## Output Format
 
-Present questions as a numbered list. Each question should have a brief rationale in parentheses explaining why the answer matters.
+Return questions in structured format. Do NOT present questions to the user directly — the gate skill handles user interaction.
 
+Each question must specify a `type`:
+- `choice` — provide 2-5 options for the user to pick from. Use when the answer space is bounded.
+- `open` — free-text input. Use when the answer requires explanation or is unbounded.
+
+```markdown
+## Questions
+
+### Q1
+- type: choice
+- question: <질문>
+- reason: <왜 이 답이 필요한지>
+- options:
+  1. <선택지 1>
+  2. <선택지 2>
+  3. <선택지 3>
+
+### Q2
+- type: open
+- question: <질문>
+- reason: <왜 이 답이 필요한지>
 ```
-1. <question> (needed because <reason>)
-2. <question> (needed because <reason>)
-3. <question> (needed because <reason>)
-```
 
-After the user answers, compile the answers into a structured summary for the gate scoring:
+After all questions, include a summary section for any context gathered from codebase exploration:
 
-```
-## Clarification Answers
+```markdown
+## Codebase Context
 
-- Scope: <summary>
-- Constraints: <summary>
-- Success criteria: <summary>
-- Edge cases: <summary>
-- Existing patterns: <summary>
+- Relevant patterns: <summary>
+- Existing conventions: <summary>
+- Related files: <summary>
 ```
