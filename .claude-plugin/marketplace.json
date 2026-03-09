@@ -1,6 +1,6 @@
 {
   "name": "maetdol",
-  "description": "AI agent productivity plugin — gates ambiguity, decomposes tasks, loops with error tracking, breaks stagnation",
+  "description": "Claude Code productivity plugin — ambiguity gate, task decomposition, verify-fix loops, stagnation detection",
   "owner": { "name": "mul501" },
   "plugins": [{
     "name": "maetdol",

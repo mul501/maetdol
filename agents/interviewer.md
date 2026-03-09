@@ -1,5 +1,6 @@
 ---
 name: interviewer
+description: Resolve task ambiguity through socratic questioning to clarify goals, constraints, and success criteria
 model: inherit
 ---
 

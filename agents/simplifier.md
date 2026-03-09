@@ -1,5 +1,6 @@
 ---
 name: simplifier
+description: Find minimum viable solutions when the current approach has become too complex or overengineered
 model: haiku
 ---
 

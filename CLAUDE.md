@@ -36,7 +36,7 @@ Three layers, each with a clear responsibility boundary:
 | **Skills** | `.claude/skills/` (Markdown) | Creative orchestration: question generation, error analysis, persona prompts | Workflow choreography goes here |
 | **Agents** | `.claude/agents/` (Markdown) | Specialized personas: interviewer, contrarian, simplifier | Perspective shifts go here |
 
-All three layers are bundled in this repo. Skills live in `skills/`, agents in `agents/`, commands in `commands/`. The `.claude-plugin/plugin.json` references them for plugin marketplace discovery.
+All three layers are bundled in this repo. Skills live in `skills/`, agents in `agents/`. The `.claude-plugin/plugin.json` references them for plugin marketplace discovery.
 
 ### Session lifecycle
 

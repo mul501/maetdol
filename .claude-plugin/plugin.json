@@ -1,6 +1,5 @@
 {
   "name": "maetdol",
-  "version": "0.1.0",
   "description": "Claude Code productivity plugin — ambiguity gate, task decomposition, verify-fix loops, stagnation detection",
   "author": { "name": "mul501" },
   "repository": "https://github.com/mul501/maetdol",
@@ -8,6 +7,9 @@
   "keywords": ["productivity", "ambiguity", "task-decomposition", "stagnation"],
   "skills": "./skills/",
   "mcpServers": "./mcp-config.json",
-  "agents": "./agents/",
-  "commands": "./commands/"
+  "agents": [
+    "./agents/contrarian.md",
+    "./agents/interviewer.md",
+    "./agents/simplifier.md"
+  ]
 }

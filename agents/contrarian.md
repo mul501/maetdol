@@ -1,5 +1,6 @@
 ---
 name: contrarian
+description: Challenge assumptions and suggest alternative approaches when debugging is stuck on repeated failures
 model: haiku
 ---
 

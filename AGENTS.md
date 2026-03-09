@@ -18,7 +18,6 @@ Claude Code productivity MCP plugin. Ambiguity gate, task decomposition, verify-
 │   ├── types.ts   # Shared type definitions
 │   └── server.ts  # Entry point — registers all tools
 ├── agents/        # Persona definitions for unstuck skill
-├── commands/      # Claude Code slash command definitions
 ├── skills/        # Claude Code skills (maetdol, gate, ralph, unstuck)
 └── mcp-config.json # MCP server registration config
 ```
@@ -91,4 +90,4 @@ npm run typecheck  # TypeScript validation (tsc --noEmit)
 
 - **State survives restarts** — sessions stored in `~/.maetdol/sessions/`
 - **No test framework** — consider adding Vitest if tests needed
-- **Skills vs Commands**: Skills contain orchestration logic; commands are thin wrappers that invoke skills
+- **Skills are the primary extension point** — orchestration logic lives in `skills/{name}/SKILL.md`
