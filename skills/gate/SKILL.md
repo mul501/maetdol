@@ -52,11 +52,10 @@ After scoring, pass the scores to `maetdol_score_ambiguity` which computes the w
 After the interviewer returns its structured response:
 
 1. Parse the response (Q1, Q2, ...). Each question has `type`, `question`, `reason`, and optionally `options` or `suggestions`.
-2. Present **all questions at once** using a single `AskUserQuestion` call:
-   - Format each question with its number, question text, and reason.
-   - For `choice` type questions, list the numbered options below the question.
-   - For `open` type questions, show the `suggestions` as reference answers the user can pick or modify.
-3. Collect the user's answers.
+2. Present questions **one at a time**, using the appropriate UI for each type:
+   - For `choice` type: Use `AskUserQuestion` with `options` parameter (array of option strings). Include the reason in the question text.
+   - For `open` type: Use `AskUserQuestion` without `options`. Include `suggestions` in the question text as reference answers.
+3. Collect each answer before asking the next question.
 4. **Check for early termination**: If the user responds with "done", "그냥 진행", "충분해", "just do it", "skip", or similar intent to stop the interview — immediately end the gate process. Note remaining ambiguities as assumptions in the output.
 5. Assemble updated context: original task + all Q&A so far.
 
