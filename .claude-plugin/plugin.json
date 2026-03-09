@@ -5,7 +5,6 @@
   "repository": "https://github.com/mul501/maetdol",
   "license": "MIT",
   "keywords": ["productivity", "ambiguity", "task-decomposition", "stagnation"],
-  "skills": "./skills/",
   "mcpServers": "./mcp-config.json",
   "agents": [
     "./agents/contrarian.md",
