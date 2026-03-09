@@ -3,7 +3,10 @@
   "description": "AI agent productivity plugin — gates ambiguity, decomposes tasks, loops with error tracking, breaks stagnation",
   "owner": { "name": "mul501" },
   "plugins": [{
+    "name": "maetdol",
+    "source": "./",
     "version": "0.1.0",
+    "description": "Claude Code productivity plugin — ambiguity gate, task decomposition, verify-fix loops, stagnation detection",
     "category": "productivity",
     "license": "MIT",
     "keywords": ["productivity", "ambiguity-gate", "task-decomposition"],
