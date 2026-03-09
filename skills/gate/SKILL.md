@@ -13,7 +13,7 @@ Triggered by: `/maetdol-gate "task description"`
 
 The argument is the task description to evaluate. If no argument is provided, use the most recent user message as the task description.
 
-## Scoring (Claude Code가 직접 수행)
+## Scoring (performed by Claude Code directly)
 
 You must score the task yourself before calling the MCP tool. Evaluate the task on a 0.0–1.0 scale for each dimension:
 
@@ -21,12 +21,14 @@ You must score the task yourself before calling the MCP tool. Evaluate the task 
 - **constraints**: How well-defined are the constraints and scope? (1.0 = fully bounded, 0.0 = wide open)
 - **criteria**: How measurable are the success criteria? (1.0 = objectively verifiable, 0.0 = "make it better")
 - **context_clarity**: How well does the task account for existing codebase patterns? (1.0 = fully grounded, 0.0 = no codebase awareness)
-  - **Round 1**: `context_clarity: 0` 고정. 코드베이스 탐색 전이므로 채점하지 않음.
-  - **Round 2+**: 인터뷰어가 코드를 읽은 후 실제 채점. "기존 패턴/컨벤션을 얼마나 고려하는가?"
+  - **Round 1**: `context_clarity: 0` fixed. Not scored before codebase exploration.
+  - **Round 2+**: Actual scoring after interviewer reads code. "How well does the task account for existing patterns/conventions?"
 
 If any dimension scores below 0.7, generate clarifying questions for the `suggestions` array.
 
-After scoring, pass the scores to `maetdol_score_ambiguity` which computes the weighted ambiguity and gate pass/fail. The response includes `weakest_dimension` — pass this to the interviewer so questions target the weakest area.
+After scoring, pass the scores to `maetdol_score_ambiguity` which computes the weighted ambiguity and gate pass/fail. The response includes `weakest_dimension` and `weak_dimensions` — pass these to the interviewer so questions target the weak areas.
+
+**Per-dimension threshold**: Even if the overall ambiguity score passes, any individual dimension below 0.7 causes the gate to fail. The server enforces this — `weak_dimensions` lists all dimensions below the threshold.
 
 ## Flow
 
@@ -42,27 +44,29 @@ After scoring, pass the scores to `maetdol_score_ambiguity` which computes the w
 3. Score the task yourself using the criteria above. Use `context_clarity: 0` for round 1.
 4. Call `maetdol_score_ambiguity` with `{ context, round: 1, goal, constraints, criteria, context_clarity: 0, suggestions, project_type }`.
 5. Evaluate the response:
-   - **Passed:** Output the refined requirements. Done.
+   - **Passed (`passed: true`):** Output the refined requirements. Done.
    - **Not passed:** Continue to clarification.
 
 ### Common: Presenting Interviewer Questions
 
 After the interviewer returns its structured response:
 
-1. Parse the response (Q1, Q2, ...). Each question has `type`, `question`, `reason`, and optionally `options`.
+1. Parse the response (Q1, Q2, ...). Each question has `type`, `question`, `reason`, and optionally `options` or `suggestions`.
 2. Present **all questions at once** using a single `AskUserQuestion` call:
    - Format each question with its number, question text, and reason.
    - For `choice` type questions, list the numbered options below the question.
-   - For `open` type questions, indicate free-text input is expected.
+   - For `open` type questions, show the `suggestions` as reference answers the user can pick or modify.
 3. Collect the user's answers.
-4. Assemble updated context: original task + all Q&A so far.
+4. **Check for early termination**: If the user responds with "done", "그냥 진행", "충분해", "just do it", "skip", or similar intent to stop the interview — immediately end the gate process. Note remaining ambiguities as assumptions in the output.
+5. Assemble updated context: original task + all Q&A so far.
 
 ### Round 2: Clarification + Contrarian Challenge
 
 1. Spawn the **interviewer** agent with:
    - The ambiguity feedback from the scoring response.
-   - "현재 가장 낮은 점수 dimension은 `{weakest_dimension}` ({score})" so it targets the weakest area.
-   - "이번 라운드에서는 Contrarian challenge도 수행하라."
+   - "The current lowest-scoring dimension is `{weakest_dimension}` ({score})" so it targets the weakest area.
+   - If `weak_dimensions` has multiple entries, list them all.
+   - "Also perform Contrarian challenge in this round."
 2. Follow the "Presenting Interviewer Questions" process above.
 3. Identify `relevant_files` during codebase exploration:
    - Use Grep with task-related keywords to find relevant source files.
@@ -77,17 +81,30 @@ After the interviewer returns its structured response:
 
 1. Spawn the **interviewer** agent with:
    - The ambiguity feedback from the scoring response.
-   - "현재 가장 낮은 점수 dimension은 `{weakest_dimension}` ({score})".
-   - "이번 라운드에서는 Simplifier challenge도 수행하라."
+   - "The current lowest-scoring dimension is `{weakest_dimension}` ({score})".
+   - If `weak_dimensions` has multiple entries, list them all.
+   - "Also perform Simplifier challenge in this round."
 2. Follow the "Presenting Interviewer Questions" process above.
 3. Re-score with `context_clarity`.
 4. Call `maetdol_score_ambiguity` with `{ context: "<updated context>", round: 3, goal, constraints, criteria, context_clarity, suggestions, project_type, relevant_files }`.
 5. **Passed:** Output refined requirements. Done.
-6. **Not passed:** Output the best requirements available. List remaining ambiguities as explicit assumptions.
+6. **Not passed:** Continue to round 4.
+
+### Round 4+: Targeted Questioning
+
+1. Spawn the **interviewer** agent with:
+   - "Current weak dimensions: `{weak_dimensions}` — only questions aimed at raising these dimensions to ≥ 0.7."
+   - No challenge mode.
+2. Follow the "Presenting Interviewer Questions" process above.
+3. Re-score and call `maetdol_score_ambiguity` with the appropriate round number.
+4. **Passed:** Output refined requirements. Done.
+5. **Not passed:** Repeat round 4+ until passed or user terminates.
+
+There is no hard round cap. The interview continues until all dimensions reach ≥ 0.7 or the user explicitly terminates.
 
 ### Output Format
 
-When the gate passes (or max rounds reached), output:
+When the gate passes or the user terminates the interview:
 
 ```
 ## Refined Requirements

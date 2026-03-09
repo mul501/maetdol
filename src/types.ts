@@ -83,6 +83,7 @@ export interface AmbiguityResult {
   passed: boolean
   suggestions: string[]
   weakest_dimension: keyof AmbiguityBreakdown
+  weak_dimensions: (keyof AmbiguityBreakdown)[]
 }
 
 // ── Ralph / Stagnation ───────────────────────────────────

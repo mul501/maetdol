@@ -69,6 +69,7 @@ State is generally immutable (spread-copy in `session.ts:86`, `storage.ts:26`). 
 | Constant | Value | File | Why |
 |----------|-------|------|-----|
 | `AMBIGUITY_THRESHOLD` | 0.3 | `score-ambiguity.ts` | Tasks must be 70%+ clear to pass. Calibrated so "Fix all TS errors in src/" passes but "Make it better" doesn't. |
+| `DIMENSION_THRESHOLD` | 0.7 | `score-ambiguity.ts` | Per-dimension minimum. Any individual dimension below 0.7 fails the gate regardless of overall score. Prevents "suggestions generated but ignored" scenarios. |
 | `MAX_TASK_ITERATIONS` | 5 | `ralph-iterate.ts` | Per-task retry cap. 5 attempts is enough to fix a real issue; more means the approach is wrong. |
 | `MAX_SESSION_ITERATIONS` | 30 | `ralph-iterate.ts` | Session-wide safety net. Prevents runaway sessions across many small tasks. |
 | `STAGNATION_THRESHOLD` | 3 | `ralph-iterate.ts` | Consecutive identical errors before flagging stagnation. 2 could be coincidence; 3 is a pattern. |

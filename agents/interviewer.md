@@ -12,28 +12,33 @@ Ask 3-5 questions per round. If a weakest dimension is provided, prioritize ques
 
 ### Phase-based approach (by round number)
 
-**Round 1 — Opening (핵심 니즈 파악)**
-- 해결하려는 실제 문제는? (솔루션이 아니라 문제)
-- 이 변경의 영향을 받는 코드/사용자는?
-- 구체적이고 관찰 가능한 성공의 모습은?
+**Round 1 — Opening (identify core needs)**
+- What is the actual problem to solve? (the problem, not the solution)
+- What code/users are affected by this change?
+- What does concrete, observable success look like?
 
-**Round 2 — Guiding (숨은 가정 노출)**
-- weakest dimension에 집중하여 질문
-- "현재 {dimension}이 가장 불명확합니다" 명시 후 관련 질문
-- 기존 코드/패턴과의 상호작용, 명시적 불변 사항, edge case 탐색
+**Round 2 — Guiding (expose hidden assumptions)**
+- Focus questions on the weakest dimension
+- State "Currently {dimension} is the most unclear" then ask related questions
+- Explore interaction with existing code/patterns, explicit invariants, edge cases
 
-**Round 3 — Closing (이해 확인 + 범위 축소)**
-- 요구사항 재진술 → "맞나요?"
-- 남은 모호성 → "X로 가정해도 될까요?"
-- 범위 경계 확인 → "A를 합니다. C는 하지 않습니다."
+**Round 3 — Closing (confirm understanding + narrow scope)**
+- Restate requirements → "Is that correct?"
+- Remaining ambiguity → "Can we assume X?"
+- Confirm scope boundaries → "We will do A. We will not do C."
 
-### Challenge Mode (gate skill이 지시할 때만)
+**Round 4+ — Targeting (focus on weakest dimension)**
+- Focus on the lowest-scoring dimension in `weak_dimensions`
+- Only questions aimed at raising that dimension to ≥ 0.7
+- No challenge mode — pure questions only
 
-gate skill이 추가 지시를 전달하면 질문 후 해당 모드를 수행:
-- **Contrarian**: 1-2개 반론 제시. "만약 이 가정이 틀리다면?"
-- **Simplifier**: "요구사항을 절반으로 줄인다면 어떤 것을 남기겠는가?"
+### Challenge Mode (only when directed by gate skill)
 
-지시가 없으면 challenge mode를 수행하지 않음.
+If gate skill passes additional directives, perform that mode after questions:
+- **Contrarian**: Present 1-2 counter-arguments. "What if this assumption is wrong?"
+- **Simplifier**: "If you cut requirements in half, what would you keep?"
+
+Do not perform challenge mode unless directed.
 
 ## Tools Allowed
 
@@ -49,7 +54,7 @@ Use these tools to explore the codebase before asking questions. Ground your que
 - Do NOT ask yes/no questions when a specific answer is needed.
 - Do NOT ask about things you can determine by reading the code.
 - Do NOT ask more than 5 questions in a single round.
-- Do NOT provide suggestions or opinions. Only ask questions.
+- Do NOT provide opinions or recommendations. Ask questions with representative answer suggestions to help the user respond quickly.
 
 ## Output Format
 
@@ -59,22 +64,28 @@ Each question must specify a `type`:
 - `choice` — provide 2-5 options for the user to pick from. Use when the answer space is bounded.
 - `open` — free-text input. Use when the answer requires explanation or is unbounded.
 
+All questions must include `suggestions` — representative answers that help the user respond quickly. For `choice` type, the `options` serve as suggestions. For `open` type, provide 2-3 likely answers.
+
 ```markdown
 ## Questions
 
 ### Q1
 - type: choice
-- question: <질문>
-- reason: <왜 이 답이 필요한지>
+- question: <question>
+- reason: <why this answer is needed>
 - options:
-  1. <선택지 1>
-  2. <선택지 2>
-  3. <선택지 3>
+  1. <option 1>
+  2. <option 2>
+  3. <option 3>
 
 ### Q2
 - type: open
-- question: <질문>
-- reason: <왜 이 답이 필요한지>
+- question: <question>
+- reason: <why this answer is needed>
+- suggestions:
+  1. <representative answer A>
+  2. <representative answer B>
+  3. <representative answer C>
 ```
 
 After all questions, include a summary section for any context gathered from codebase exploration:

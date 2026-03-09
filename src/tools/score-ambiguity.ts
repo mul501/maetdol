@@ -3,7 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { AmbiguityResult } from '../types.js'
 import { loadSession, saveSession } from '../lib/storage.js'
 import { ok, toolError } from '../lib/response.js'
-import { AMBIGUITY_THRESHOLD, PHASE } from '../lib/constants.js'
+import { AMBIGUITY_THRESHOLD, DIMENSION_THRESHOLD, PHASE } from '../lib/constants.js'
 
 export function registerScoreAmbiguityTool(server: McpServer) {
   server.registerTool(
@@ -39,12 +39,18 @@ export function registerScoreAmbiguityTool(server: McpServer) {
         : [['goal', goal], ['constraints', constraints], ['criteria', criteria]]
       const weakest = scoreEntries.reduce((min, curr) => (curr[1] < min[1] ? curr : min))[0]
 
+      const weakDimensions = scoreEntries
+        .filter(([_, score]) => score < DIMENSION_THRESHOLD)
+        .sort(([, a], [, b]) => a - b)
+        .map(([name]) => name)
+
       const result: AmbiguityResult = {
         ambiguity,
         breakdown: { goal, constraints, criteria, context: context_clarity },
-        passed: ambiguity <= AMBIGUITY_THRESHOLD,
+        passed: ambiguity <= AMBIGUITY_THRESHOLD && weakDimensions.length === 0,
         suggestions: suggestions ?? [],
         weakest_dimension: weakest,
+        weak_dimensions: weakDimensions,
       }
 
       if (session_id) {

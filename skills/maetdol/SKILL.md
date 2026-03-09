@@ -17,7 +17,7 @@ The `design` phase is optional — simple/clear tasks can skip it. The `stories`
 
 ## Execution Model
 
-Design(Step 2.5)이 파이프라인의 **유일한 사용자 체크포인트**다. 사용자가 design을 승인하면, 이후 모든 phase(Stories → Decompose → Ralph → Verify → Complete)는 **중단 없이 연속 실행**한다. "계속할까요?", "시작할까요?", "진행해도 될까요?" 류의 확인 질문을 절대 하지 않는다.
+Design (Step 2.5) is the **only user checkpoint** in the pipeline. Once the user approves the design, all subsequent phases (Stories → Decompose → Ralph → Verify → Complete) execute **continuously without interruption**. Never ask confirmation questions like "Should we continue?", "Ready to start?", or "Is it okay to proceed?"
 
 ## Step 0: Identify Project
 
@@ -47,12 +47,13 @@ Determine whether to create a new session or resume an existing one.
 Before any work begins, verify the task is well-defined.
 
 1. Call `maetdol_score_ambiguity` with `{ context: "<task description + any gathered context>", round: 1, goal: <score>, constraints: <score>, criteria: <score>, context_clarity: 0, suggestions: [<questions>], session_id: "<id>" }`.
-2. If the score indicates the task **passes** the gate:
+2. If the score indicates the task **passes** the gate (overall ambiguity ≤ 0.3 AND all dimensions ≥ 0.7):
    - Proceed to Step 3 with the refined requirements from the response.
-3. If the score indicates the task **does not pass**:
-   - Spawn the **interviewer** agent to ask the user socratic clarifying questions. Pass `weakest_dimension` from the response so questions target the weakest area.
-   - After the user answers, call `maetdol_score_ambiguity` again with `{ context: "<original + answers>", round: 2, goal: <score>, constraints: <score>, criteria: <score>, context_clarity: <score>, suggestions: [<questions>], session_id: "<id>" }`.
-   - Repeat up to 3 rounds. If still ambiguous after round 3, proceed with best-effort requirements and note the remaining ambiguities.
+3. If the score indicates the task **does not pass** (overall ambiguity too high OR any dimension in `weak_dimensions`):
+   - Spawn the **interviewer** agent to ask the user socratic clarifying questions. Pass `weakest_dimension` and `weak_dimensions` from the response so questions target the weak areas.
+   - After the user answers, call `maetdol_score_ambiguity` again with `{ context: "<original + answers>", round: 2, ... }`.
+   - Repeat until the gate passes or the user explicitly terminates (says "done", "그냥 진행", "충분해", etc.). No hard round cap — the interview continues as needed.
+   - If the user terminates early, proceed with best-effort requirements and note the remaining ambiguities as assumptions.
 
 ## Step 2.5: Design (optional — requirements analysis and architecture)
 

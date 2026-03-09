@@ -10,6 +10,7 @@ export const PHASE = {
 
 export const MAX_EVIDENCE_LENGTH = 500
 export const AMBIGUITY_THRESHOLD = 0.3
+export const DIMENSION_THRESHOLD = 0.7
 export const MAX_TASK_ITERATIONS = 5
 export const MAX_SESSION_ITERATIONS = 30
 export const STAGNATION_THRESHOLD = 3
