@@ -116,12 +116,23 @@ export async function listSessions(projectId?: string): Promise<
 
 export async function clearProjectSessions(projectId: string): Promise<{ sessions_removed: number }> {
   await dirReady
-  const sessions = await loadAllSessions()
-  const toDelete = sessions.filter((s) => s.project_id === projectId)
-  await Promise.all(
-    toDelete.map((s) => rm(join(SESSIONS_DIR, `${s.id}.json`), { force: true })),
+  const files = (await readdir(SESSIONS_DIR)).filter((f) => f.endsWith('.json'))
+  const results = await Promise.all(
+    files.map(async (file) => {
+      try {
+        const raw = await readFile(join(SESSIONS_DIR, file), 'utf-8')
+        const { project_id } = JSON.parse(raw) as { project_id?: string }
+        if (project_id === projectId) {
+          await rm(join(SESSIONS_DIR, file), { force: true })
+          return true
+        }
+      } catch (err) {
+        console.error(`maetdol: skipping corrupt session file ${file}:`, err instanceof Error ? err.message : err)
+      }
+      return false
+    }),
   )
-  return { sessions_removed: toDelete.length }
+  return { sessions_removed: results.filter(Boolean).length }
 }
 
 export async function clearAllData(): Promise<{ sessions_removed: number }> {
