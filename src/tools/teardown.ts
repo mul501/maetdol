@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { listSessions, clearAllData } from '../lib/storage.js'
+import { listSessions, clearAllData, clearProjectSessions } from '../lib/storage.js'
 import { ok, toolError } from '../lib/response.js'
 
 export function registerTeardownTool(server: McpServer) {
@@ -21,7 +21,9 @@ export function registerTeardownTool(server: McpServer) {
         }
 
         case 'confirm': {
-          const result = await clearAllData()
+          const result = project_id
+            ? await clearProjectSessions(project_id)
+            : await clearAllData()
           return ok(result)
         }
 

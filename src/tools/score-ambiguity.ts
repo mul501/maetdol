@@ -50,17 +50,19 @@ export function registerScoreAmbiguityTool(server: McpServer) {
       if (session_id) {
         const session = await loadSession(session_id)
         if (!session) return toolError(`Session ${session_id} not found`)
-        session.gate = {
-          score: result.ambiguity,
-          passed: result.passed,
-          refined_task: context,
-          project_type,
-          relevant_files,
+        if (session.phase === PHASE.gate) {
+          session.gate = {
+            score: result.ambiguity,
+            passed: result.passed,
+            refined_task: context,
+            project_type,
+            relevant_files,
+          }
+          if (result.passed) {
+            session.phase = PHASE.design
+          }
+          await saveSession(session)
         }
-        if (result.passed && session.phase === PHASE.gate) {
-          session.phase = PHASE.design
-        }
-        await saveSession(session)
       }
 
       return ok(result)

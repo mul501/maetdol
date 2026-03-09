@@ -114,6 +114,16 @@ export async function listSessions(projectId?: string): Promise<
   return filtered.map((s) => ({ id: s.id, project_id: s.project_id, task: s.task, phase: s.phase, created_at: s.created_at }))
 }
 
+export async function clearProjectSessions(projectId: string): Promise<{ sessions_removed: number }> {
+  await dirReady
+  const sessions = await loadAllSessions()
+  const toDelete = sessions.filter((s) => s.project_id === projectId)
+  await Promise.all(
+    toDelete.map((s) => rm(join(SESSIONS_DIR, `${s.id}.json`), { force: true })),
+  )
+  return { sessions_removed: toDelete.length }
+}
+
 export async function clearAllData(): Promise<{ sessions_removed: number }> {
   await dirReady
   const files = (await readdir(SESSIONS_DIR)).filter((f) => f.endsWith('.json'))
