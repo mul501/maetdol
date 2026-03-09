@@ -1,17 +1,17 @@
 ---
-name: design
+name: maetdol-design
 description: Requirements analysis and architecture design for a maetdol session
 ---
 
 # Design Skill
 
-Analyzes requirements and produces an architecture design before task decomposition. Can run standalone via `/maetdol:design` or as part of the full maetdol pipeline.
+Analyzes requirements and produces an architecture design before task decomposition. Can run standalone via `/maetdol-design` or as part of the full maetdol pipeline.
 
 ## Independent Mode
 
-Triggered by: `/maetdol:design`
+Triggered by: `/maetdol-design`
 
-Requires an active session in `design` phase. If no session exists, instruct the user to run `/maetdol:gate` first.
+Requires an active session in `design` phase. If no session exists, instruct the user to run `/maetdol-gate` first.
 
 ## Flow
 

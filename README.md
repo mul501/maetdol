@@ -18,11 +18,11 @@ Claude Code productivity plugin. Ambiguity gate, task decomposition, verify-fix 
 Sub-commands (work standalone or within a session):
 
 ```
-/maetdol:gate "Add user authentication"    # Check ambiguity only
-/maetdol:design                             # Requirements analysis and architecture
-/maetdol:unstuck                           # Break out of a stuck loop
-/maetdol:setup                             # Verify plugin setup
-/maetdol:teardown                          # Remove session data and uninstall
+/maetdol-gate "Add user authentication"    # Check ambiguity only
+/maetdol-design                             # Requirements analysis and architecture
+/maetdol-unstuck                           # Break out of a stuck loop
+/maetdol-setup                             # Verify plugin setup
+/maetdol-teardown                          # Remove session data and uninstall
 ```
 
 ## Install
@@ -32,7 +32,7 @@ Sub-commands (work standalone or within a session):
 ```
 /plugin marketplace add https://github.com/mul501/maetdol
 /plugin install maetdol
-/maetdol:setup
+/maetdol-setup
 ```
 
 ### Development

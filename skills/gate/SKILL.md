@@ -1,15 +1,15 @@
 ---
-name: gate
+name: maetdol-gate
 description: Check task ambiguity and refine requirements through socratic questioning
 ---
 
 # Gate Skill
 
-Scores a task for ambiguity and iteratively refines it through clarifying questions. Can run standalone via `/maetdol:gate` or as part of the full maetdol pipeline.
+Scores a task for ambiguity and iteratively refines it through clarifying questions. Can run standalone via `/maetdol-gate` or as part of the full maetdol pipeline.
 
 ## Independent Mode
 
-Triggered by: `/maetdol:gate "task description"`
+Triggered by: `/maetdol-gate "task description"`
 
 The argument is the task description to evaluate. If no argument is provided, use the most recent user message as the task description.
 

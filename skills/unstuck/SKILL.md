@@ -1,15 +1,15 @@
 ---
-name: unstuck
+name: maetdol-unstuck
 description: Detect stagnation patterns and suggest alternative approaches
 ---
 
 # Unstuck Skill
 
-Breaks out of stuck loops by detecting stagnation patterns and spawning specialized agents to suggest alternative approaches. Can run standalone via `/maetdol:unstuck` or be invoked by the ralph skill during execution.
+Breaks out of stuck loops by detecting stagnation patterns and spawning specialized agents to suggest alternative approaches. Can run standalone via `/maetdol-unstuck` or be invoked by the ralph skill during execution.
 
 ## Independent Mode
 
-Triggered by: `/maetdol:unstuck`
+Triggered by: `/maetdol-unstuck`
 
 Collects context from the current conversation:
 1. Scan the conversation for recent error messages and failed attempts.

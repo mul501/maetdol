@@ -19,11 +19,11 @@ npm run typecheck  # tsc --noEmit
 ```
 
 ```
-/maetdol:setup     # Install deps and verify MCP server
+/maetdol-setup     # Install deps and verify MCP server
 /maetdol "task"    # Full pipeline — gate → decompose → ralph → verify
-/maetdol:gate      # Check ambiguity only
-/maetdol:design    # Requirements analysis and architecture design
-/maetdol:unstuck   # Break out of a stuck loop
+/maetdol-gate      # Check ambiguity only
+/maetdol-design    # Requirements analysis and architecture design
+/maetdol-unstuck   # Break out of a stuck loop
 ```
 
 ## Architecture

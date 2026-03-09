@@ -1,5 +1,5 @@
 ---
-name: teardown
+name: maetdol-teardown
 description: Remove all maetdol session data and guide plugin uninstall
 ---
 
@@ -7,7 +7,7 @@ description: Remove all maetdol session data and guide plugin uninstall
 
 Removes maetdol session data and guides plugin uninstall.
 
-Triggered by: `/maetdol:teardown`
+Triggered by: `/maetdol-teardown`
 
 ## Flow
 

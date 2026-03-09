@@ -1,15 +1,15 @@
 ---
-name: ralph
+name: maetdol-ralph
 description: Iterative verify-fix-verify loop with stagnation detection
 ---
 
 # Ralph Skill
 
-Runs a verify-fix-verify loop on the current task or most recent changes. Named after the "wreck it, fix it" pattern. Can run standalone via `/maetdol:ralph` or as part of the full maetdol pipeline.
+Runs a verify-fix-verify loop on the current task or most recent changes. Named after the "wreck it, fix it" pattern. Can run standalone via `/maetdol-ralph` or as part of the full maetdol pipeline.
 
 ## Independent Mode
 
-Triggered by: `/maetdol:ralph`
+Triggered by: `/maetdol-ralph`
 
 Uses the current conversation context to determine what needs verification. Looks at:
 - Most recent file changes (git diff)
