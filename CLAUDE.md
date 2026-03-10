@@ -25,6 +25,7 @@ npm run typecheck  # tsc --noEmit
 /maetdol-design    # Requirements analysis and architecture design
 /maetdol-run       # Execute from current phase through completion
 /maetdol-unstuck   # Break out of a stuck loop
+/maetdol-review    # Review code changes using external model CLI
 ```
 
 ## Architecture
@@ -36,12 +37,13 @@ Three layers, each with a clear responsibility boundary:
 | **Server** | `src/` (TypeScript) | Deterministic logic: scoring math, hash comparison, state persistence, dependency graphs | State and computation go here |
 | **Skills** | `.claude/skills/` (Markdown) | Creative orchestration: question generation, error analysis, persona prompts | Workflow choreography goes here |
 | **Agents** | `.claude/agents/` (Markdown) | Specialized personas: interviewer, contrarian, simplifier | Perspective shifts go here |
+| **Hooks** | `hooks/` (JavaScript) | Safety guards: destructive command blocking | Always-on bash safety |
 
 All three layers are bundled in this repo. Skills live in `skills/`, agents in `agents/`. The `.claude-plugin/plugin.json` references them for plugin marketplace discovery.
 
 ### Session lifecycle
 
-`gate` → [`design`] → [`stories`] → `decompose` → `ralph` → [`story verify`] → `verify` → `completed`
+`gate` → [`research` + `design` + `plan-review`] → [`stories`] → `decompose` → `ralph`(+bash-guard) → [`story verify`] → `verify` → `completed`
 
 The `design` phase is optional — simple/clear tasks can skip it. The `stories` phase is optional — only for complex tasks with 3+ subtasks. Simple tasks skip directly from gate to decompose. Story verification happens automatically as task groups complete.
 
@@ -90,3 +92,6 @@ The interviewer agent (skill-side) inherits the caller's model. The contrarian a
 - **Ambiguity formula**: Round 1: `goal×0.4 + constraints×0.3 + criteria×0.3` (context excluded pre-exploration). Round 2+: `goal×0.35 + constraints×0.25 + criteria×0.25 + context×0.15`. Response includes `weakest_dimension` for targeted interviewing.
 - **Stagnation detection uses two patterns**: Spinning (last 3 hashes identical) and oscillation (ABAB pattern in last 4 hashes). Each maps to a different persona recommendation.
 - **`dist/` commit rule**: When `src/` or `package.json` dependencies change, always run `npm run build` and commit `dist/server.js` together. Marketplace users have no `node_modules/` — they run `node dist/server.js` directly. Source/bundle mismatch breaks user environments.
+- **Bash-guard is always active**: PreToolUse hook applies to all Bash calls regardless of session state. Fail-open — allows the command on hook error.
+- **Review CLI is registered in setup**: No auto-detection. `/maetdol-setup` asks the user, verifies, and saves to config.json.
+- **Plan review is graceful**: Silently skips the review step if no external CLI is registered. Does not break the design workflow.
