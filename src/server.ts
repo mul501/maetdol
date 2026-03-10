@@ -5,7 +5,7 @@ import { registerTasksTool } from './tools/tasks.js'
 import { registerScoreAmbiguityTool } from './tools/score-ambiguity.js'
 import { registerRalphIterateTool } from './tools/ralph-iterate.js'
 import { registerDetectStagnationTool } from './tools/detect-stagnation.js'
-import { registerDesignTool } from './tools/design.js'
+import { registerBlueprintTool } from './tools/blueprint.js'
 import { registerTeardownTool } from './tools/teardown.js'
 
 const server = new McpServer({
@@ -18,7 +18,7 @@ registerTasksTool(server)
 registerScoreAmbiguityTool(server)
 registerRalphIterateTool(server)
 registerDetectStagnationTool(server)
-registerDesignTool(server)
+registerBlueprintTool(server)
 registerTeardownTool(server)
 
 async function main() {

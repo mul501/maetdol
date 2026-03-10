@@ -1,17 +1,17 @@
 ---
-name: maetdol-design
-description: Requirements analysis and architecture design for a maetdol session
+name: maetdol-blueprint
+description: Requirements analysis and architecture blueprint for a maetdol session
 ---
 
-# Design Skill
+# Blueprint Skill
 
-Analyzes requirements and produces an architecture design before task decomposition. Can run standalone via `/maetdol-design` or as part of the full maetdol pipeline.
+Analyzes requirements and produces an architecture blueprint before task decomposition. Can run standalone via `/maetdol-blueprint` or as part of the full maetdol pipeline.
 
 ## Independent Mode
 
-Triggered by: `/maetdol-design`
+Triggered by: `/maetdol-blueprint`
 
-Requires an active session in `design` phase. If no session exists, instruct the user to run `/maetdol-gate` first.
+Requires an active session in `blueprint` phase. If no session exists, instruct the user to run `/maetdol-gate` first.
 
 ## Flow
 
@@ -23,18 +23,18 @@ Read the session to get:
 - `gate.relevant_files` — files discovered during gate exploration (may be empty)
 - `gate.score` — ambiguity score
 
-### 2. Decide: Skip or Design
+### 2. Decide: Skip or Blueprint
 
 **Skip conditions** (all must be true):
 - `gate.score < 0.15` (very clear task)
 - `relevant_files` has 2 or fewer entries (small scope)
 
 If skipping:
-- Call `maetdol_design` with `{ session_id, skip: true }`.
-- Output: "Design skipped — task is simple enough for direct decomposition."
+- Call `maetdol_blueprint` with `{ session_id, skip: true }`.
+- Output: "Blueprint skipped — task is simple enough for direct decomposition."
 - Done.
 
-### 2.5. Research (required before design)
+### 2.5. Research (required before blueprint)
 
 Research on two tracks: **Code Research** + **External Research**. Run both tracks in parallel — they are independent of each other.
 
@@ -69,16 +69,16 @@ Collect external evidence for libraries, frameworks, or technologies used in the
    - Search for official docs, best practices, known issues via WebSearch
    - E.g.: "MCP plugin hooks.json format", "tsup library bundling", etc.
 
-4. **When neither is available**: Skip external research, but note in the design's External References section: "External research tools not configured — can be enabled via `/maetdol-setup`."
+4. **When neither is available**: Skip external research, but note in the blueprint's External References section: "External research tools not configured — can be enabled via `/maetdol-setup`."
 
 5. **Assess applicability**: Determine how to apply findings to the task:
-   - If official docs recommend a pattern → reflect in design
+   - If official docs recommend a pattern → reflect in blueprint
    - If known gotchas exist → note in Risks
    - If uncertain areas remain → ask the user
 
 #### C. Consolidate Findings
 
-Merge code research + external research results into notes for the Step 3 design:
+Merge code research + external research results into notes for the Step 3 blueprint:
 
 ```
 ## Research Findings
@@ -92,7 +92,7 @@ Merge code research + external research results into notes for the Step 3 design
   E.g.: "tsup official docs: external option controls bundle size"
 
 ### Open Questions
-- <items to confirm with user before design>
+- <items to confirm with user before blueprint>
 ```
 
 If there are Open Questions, ask the user before proceeding to Step 3.
@@ -103,11 +103,11 @@ If there are Open Questions, ask the user before proceeding to Step 3.
 - **External research**: Skip if the task is purely internal refactoring (no external library involvement).
 - **Both skipped**: Rare but possible (e.g., simple file rename) → proceed directly to Step 3.
 
-### 3. Design (when not skipping)
+### 3. Blueprint (when not skipping)
 
 #### For `existing` projects:
 
-1. Proceed with design based on Step 2.5 research findings (code patterns + external evidence).
+1. Proceed with blueprint based on Step 2.5 research findings (code patterns + external evidence).
 2. Identify:
    - **Modules to change** — which existing files need modification and why.
    - **Pattern consistency** — do proposed changes align with existing conventions?
@@ -117,7 +117,7 @@ If there are Open Questions, ask the user before proceeding to Step 3.
    - `files_to_create` — new files needed (if any).
 4. Write a `summary` covering:
    - Approach: how the task will be accomplished.
-   - Key design decisions and rationale.
+   - Key decisions and rationale.
    - Risks or trade-offs.
 
 #### For `new` projects:
@@ -131,12 +131,12 @@ If there are Open Questions, ask the user before proceeding to Step 3.
    - `files_to_create` — all files to be created.
 3. Write a `summary` covering:
    - Architecture overview.
-   - Key design decisions and rationale.
+   - Key decisions and rationale.
    - Dependencies (if any).
 
 ### 3.5. Plan Review (external model review)
 
-Get a second opinion from an external model before sharing the design with the user.
+Get a second opinion from an external model before sharing the blueprint with the user.
 
 1. **Check config**: Read `review_cli` from `cat ~/.maetdol/config.json 2>/dev/null`.
    - If configured → proceed to step 2.
@@ -144,21 +144,21 @@ Get a second opinion from an external model before sharing the design with the u
 
 2. **Compose review prompt** as a shell variable `PROMPT` containing:
    - gate.refined_task
-   - Design summary, files_to_modify, files_to_create
-   - Instruction: "Review this coding task design. Identify potential issues, missing considerations, and better approaches. Be concise — 10 bullets max."
+   - Blueprint summary, files_to_modify, files_to_create
+   - Instruction: "Review this coding task blueprint. Identify potential issues, missing considerations, and better approaches. Be concise — 10 bullets max."
 
 3. **Execute CLI** (Bash):
    `echo "$PROMPT" | <review_cli> <review_cli_flags>`
    Timeout: 120 seconds. On failure/timeout → skip review and proceed to Step 4.
 
-4. **Save review results**: Retain CLI output to present alongside the design in Step 4.
+4. **Save review results**: Retain CLI output to present alongside the blueprint in Step 4.
 
 ### 4. Present to User
 
-Output the design summary in a clear format:
+Output the blueprint summary in a clear format:
 
 ```
-## Design Summary
+## Blueprint Summary
 
 <Approach and key decisions>
 
@@ -175,24 +175,24 @@ Output the design summary in a clear format:
 - <any notable risks>
 ```
 
-Ask the user to confirm or adjust before proceeding. This is the **only user checkpoint** in the entire maetdol pipeline. After the user confirms, call `maetdol_design` to record the design (Step 5). Then instruct the user: "Design recorded. Run `/maetdol-run` to start the remaining pipeline (decompose → ralph → verify)."
+Ask the user to confirm or adjust before proceeding. This is the **only user checkpoint** in the entire maetdol pipeline. After the user confirms, call `maetdol_blueprint` to record the blueprint (Step 5). Then instruct the user: "Blueprint recorded. Run `/maetdol-run` to start the remaining pipeline (decompose → ralph → verify)."
 
-### 5. Record Design
+### 5. Record Blueprint
 
-Call `maetdol_design` with `{ session_id, summary, files_to_modify, files_to_create }`.
+Call `maetdol_blueprint` with `{ session_id, summary, files_to_modify, files_to_create }`.
 
-The server stores the design and advances the phase to `stories`.
+The server stores the blueprint and advances the phase to `stories`.
 
 ## Session Mode
 
 When called from the maetdol orchestration skill:
 - Session context is automatically available.
-- The server enforces phase guard — `maetdol_design` only works when `session.phase === 'design'`.
+- The server enforces phase guard — `maetdol_blueprint` only works when `session.phase === 'blueprint'`.
 - After recording, the session advances to `stories` phase.
 
 ## Important Behaviors
 
-- Never skip the user confirmation step unless the design is being skipped entirely.
+- Never skip the user confirmation step unless the blueprint is being skipped entirely.
 - Keep the summary concise — focus on decisions that affect decomposition, not implementation details.
-- For existing projects, always read the relevant files before designing. Don't guess at patterns.
-- If `relevant_files` is empty for an existing project, do a quick codebase scan before designing.
+- For existing projects, always read the relevant files before producing the blueprint. Don't guess at patterns.
+- If `relevant_files` is empty for an existing project, do a quick codebase scan before producing the blueprint.

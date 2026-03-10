@@ -12,7 +12,7 @@ export interface GateResult {
   relevant_files?: string[]
 }
 
-export interface DesignResult {
+export interface BlueprintResult {
   summary: string | null
   files_to_modify: string[]
   files_to_create: string[]
@@ -59,7 +59,7 @@ export interface Session {
   task: string
   phase: SessionPhase
   gate: GateResult | null
-  design: DesignResult | null
+  blueprint: BlueprintResult | null
   stories: UserStory[]
   tasks: TaskItem[]
   current_task_id: number | null

@@ -47,7 +47,7 @@ Call `maetdol_session` with `{ action: "complete", session_id: "<id from step 2>
 
 ### 4.5. Research Tools Check
 
-Verify that MCP tools needed for external research in the design phase are installed.
+Verify that MCP tools needed for external research in the blueprint phase are installed.
 
 1. **Check Context7**: Attempt to call `mcp__context7__resolve-library-id` with `{ libraryName: "test" }`.
    - Success (response received) → `context7: true`
@@ -77,11 +77,11 @@ Verify that MCP tools needed for external research in the design phase are insta
 ### 4.6. Review CLI Setup
 
 Ask the user whether to configure an external review model. Used in two places:
-- **Design review** (design Step 3.5) — external model reviews the design before showing it to the user
+- **Blueprint review** (blueprint Step 3.5) — external model reviews the blueprint before showing it to the user
 - **Code review** (`/maetdol-review`) — external model reviews code changes
 
 1. **Present choices** (AskUserQuestion):
-   "Choose an external model CLI for design and code review."
+   "Choose an external model CLI for blueprint and code review."
    - **Codex** — OpenAI Codex CLI (`codex` command). Prerequisite: `npm i -g @openai/codex` + OpenAI login.
    - **Claude** — Anthropic Claude CLI (`claude` command). Prerequisite: Claude Code installed + logged in.
    - **Gemini** — Google Gemini CLI (`gemini` command). Prerequisite: Gemini CLI installed + logged in.
@@ -113,7 +113,7 @@ Ask the user whether to configure an external review model. Used in two places:
      - gemini: `--prompt ""`
    - Failure → "CLI is not responding. Check your login status." then skip.
 
-5. **Confirmation message**: "Review CLI `<name>` registered. It will be used in plan-review and /maetdol-review."
+5. **Confirmation message**: "Review CLI `<name>` registered. It will be used in blueprint review and /maetdol-review."
 
 ### 5. Success Summary
 
@@ -128,7 +128,7 @@ maetdol is ready. Available commands:
 |---------|-------------|
 | `/maetdol "task"` | Full pipeline — gate → decompose → ralph → verify |
 | `/maetdol-gate "task"` | Check ambiguity only |
-| `/maetdol-design "task"` | Requirements analysis and architecture design |
+| `/maetdol-blueprint "task"` | Requirements analysis and architecture blueprint |
 | `/maetdol-unstuck` | Break out of a stuck loop |
 | `/maetdol-review` | Review code changes using external model CLI |
 | `/maetdol-setup` | Re-run this setup |

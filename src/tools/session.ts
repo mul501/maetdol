@@ -44,7 +44,7 @@ export function registerSessionTool(server: McpServer) {
             task,
             phase: PHASE.gate,
             gate: null,
-            design: null,
+            blueprint: null,
             stories: [],
             tasks: [],
             current_task_id: null,

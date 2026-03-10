@@ -1,6 +1,6 @@
 export const PHASE = {
   gate: 'gate',
-  design: 'design',
+  blueprint: 'blueprint',
   stories: 'stories',
   decompose: 'decompose',
   ralph: 'ralph',

@@ -10,14 +10,14 @@ Entry point for the `/maetdol` command. Runs the full pipeline: session manageme
 ## Flow Overview
 
 ```
-session create/resume → gate → [design] → [stories] → decompose → [ralph loop per task] → [story verify] → final verify → session complete
+session create/resume → gate → [blueprint] → [stories] → decompose → [ralph loop per task] → [story verify] → final verify → session complete
 ```
 
-The `design` phase is optional — simple/clear tasks can skip it. The `stories` phase is optional — only for complex tasks with 3+ subtasks. Simple tasks skip directly to `decompose`.
+The `blueprint` phase is optional — simple/clear tasks can skip it. The `stories` phase is optional — only for complex tasks with 3+ subtasks. Simple tasks skip directly to `decompose`.
 
 ## Execution Model
 
-Design (Step 2.5) is the **only user checkpoint** in the pipeline. Once the user approves the design, all subsequent phases (Stories → Decompose → Ralph → Verify → Complete) execute **continuously without interruption**. Never ask confirmation questions like "Should we continue?", "Ready to start?", or "Is it okay to proceed?"
+Blueprint (Step 2.5) is the **only user checkpoint** in the pipeline. Once the user approves the blueprint, all subsequent phases (Stories → Decompose → Ralph → Verify → Complete) execute **continuously without interruption**. Never ask confirmation questions like "Should we continue?", "Ready to start?", or "Is it okay to proceed?"
 
 ## Step 0: Identify Project
 
@@ -55,16 +55,22 @@ Before any work begins, verify the task is well-defined.
    - Repeat until the gate passes or the user explicitly terminates (says "done", "그냥 진행", "충분해", etc.). No hard round cap — the interview continues as needed.
    - If the user terminates early, proceed with best-effort requirements and note the remaining ambiguities as assumptions.
 
-## Step 2.5: Design (optional — requirements analysis and architecture)
+## Step 2.5: Blueprint (optional — requirements analysis and architecture)
 
-After the gate passes, the session is in `design` phase. Run the **design** skill to analyze requirements and produce an architecture plan.
+After the gate passes, the session is in `blueprint` phase. Analyze requirements and produce an architecture plan.
 
 1. Read the session to check `gate.score` and `gate.relevant_files`.
-2. **Skip condition**: If `gate.score < 0.15` AND `relevant_files` has 2 or fewer entries, call `maetdol_design` with `{ session_id, skip: true }` and proceed to Step 3a.
-3. **Full design**: Follow the design skill flow — analyze the codebase, propose architecture, present to user, then call `maetdol_design` with the results.
-4. The server advances the phase to `stories`.
+2. **Skip condition**: If `gate.score < 0.15` AND `relevant_files` has 2 or fewer entries, call `maetdol_blueprint` with `{ session_id, skip: true }` and proceed to Step 3a.
+3. **Research**: Run code research (read `relevant_files`, search for related patterns) and external research (Context7/web if configured in `~/.maetdol/config.json` `research_tools`) in parallel. Consolidate findings.
+4. **Blueprint**: Based on research findings, produce `summary`, `files_to_modify`, and `files_to_create`. For existing projects: modules to change, pattern consistency, impact scope. For new projects: directory structure, key modules, design decisions.
+5. **Plan review** (before presenting to user):
+   a. Read `review_cli` from `cat ~/.maetdol/config.json 2>/dev/null`.
+   b. If configured: compose a prompt containing `gate.refined_task` + blueprint summary/files, pipe to `echo "$PROMPT" | <review_cli> <review_cli_flags>` with 120s timeout. Save the output.
+   c. If not configured OR CLI fails/times out: skip review gracefully. Note "Review CLI not configured" or "Review CLI failed" in the External Review section.
+6. **Present to user**: Show the blueprint with sections — Blueprint Summary, Files to Modify, Files to Create, External Review (review output or skip reason), Risks/Trade-offs. Ask the user to confirm or adjust. This is the **only user checkpoint** in the pipeline.
+7. **Record**: After user confirms, call `maetdol_blueprint` with `{ session_id, summary, files_to_modify, files_to_create }`. The server advances the phase to `stories`.
 
-After design completes, inform the user they can start execution with `/maetdol-run`. When called from within the `/maetdol` pipeline directly, automatically continue with the `/maetdol-run` flow.
+After blueprint completes, inform the user they can start execution with `/maetdol-run`. When called from within the `/maetdol` pipeline directly, automatically continue with the `/maetdol-run` flow.
 
 ## Step 3a: Stories (optional — structure requirements as User Stories)
 
@@ -107,7 +113,7 @@ Iterate through subtasks one by one. Each task is dispatched to the **executor**
 3. Spawn the **executor** agent with:
    - `session_id`, `task_id` from the task
    - `title`, `acceptance_criteria`, `testable` from the task
-   - `relevant_files` from design phase (if available in `session.design`)
+   - `relevant_files` from blueprint phase (if available in `session.blueprint`)
    - `project_context`: build/test commands, conventions from the project
 4. Based on the executor's returned outcome:
    - **completed** → Call `maetdol_tasks` with `{ action: "update", session_id: "<id>", task_id: <id>, status: "completed" }`.
@@ -150,7 +156,7 @@ When resuming a session, the server returns the exact state:
 | Phase | Recovery Action |
 |-------|----------------|
 | `gate` | Re-run gate from round 1 (round context is not persisted server-side) |
-| `design` | If `session.design` exists, skip to stories. Otherwise re-run design skill. |
+| `blueprint` | If `session.blueprint` exists, skip to stories. Otherwise re-run blueprint skill. |
 | `stories` | Stories already exist, skip to decompose |
 | `decompose` | Task list already exists, skip to ralph loop |
 | `ralph` | Read `current_task_id` and `iteration`. Spawn executor agent for the current task — executor reads task iteration history from the server to resume appropriately. |

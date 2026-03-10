@@ -22,7 +22,7 @@ npm run typecheck  # tsc --noEmit
 /maetdol-setup     # Install deps and verify MCP server
 /maetdol "task"    # Full pipeline — gate → decompose → ralph → verify
 /maetdol-gate      # Check ambiguity only
-/maetdol-design    # Requirements analysis and architecture design
+/maetdol-blueprint # Requirements analysis and architecture blueprint
 /maetdol-run       # Execute from current phase through completion
 /maetdol-unstuck   # Break out of a stuck loop
 /maetdol-review    # Review code changes using external model CLI
@@ -43,9 +43,9 @@ All three layers are bundled in this repo. Skills live in `skills/`, agents in `
 
 ### Session lifecycle
 
-`gate` → [`research` + `design` + `plan-review`] → [`stories`] → `decompose` → `ralph`(+bash-guard) → [`story verify`] → `verify` → `completed`
+`gate` → [`research` + `blueprint` + `plan-review`] → [`stories`] → `decompose` → `ralph`(+bash-guard) → [`story verify`] → `verify` → `completed`
 
-The `design` phase is optional — simple/clear tasks can skip it. The `stories` phase is optional — only for complex tasks with 3+ subtasks. Simple tasks skip directly from gate to decompose. Story verification happens automatically as task groups complete.
+The `blueprint` phase is optional — simple/clear tasks can skip it. The `stories` phase is optional — only for complex tasks with 3+ subtasks. Simple tasks skip directly from gate to decompose. Story verification happens automatically as task groups complete.
 
 Sessions persist to `~/.maetdol/sessions/{id}.json` and survive context compression and process restarts.
 
@@ -94,4 +94,4 @@ The interviewer agent (skill-side) inherits the caller's model. The contrarian a
 - **`dist/` commit rule**: When `src/` or `package.json` dependencies change, always run `npm run build` and commit `dist/server.js` together. Marketplace users have no `node_modules/` — they run `node dist/server.js` directly. Source/bundle mismatch breaks user environments.
 - **Bash-guard is always active**: PreToolUse hook applies to all Bash calls regardless of session state. Fail-open — allows the command on hook error.
 - **Review CLI is registered in setup**: No auto-detection. `/maetdol-setup` asks the user, verifies, and saves to config.json.
-- **Plan review is graceful**: Silently skips the review step if no external CLI is registered. Does not break the design workflow.
+- **Plan review is graceful**: Silently skips the review step if no external CLI is registered. Does not break the blueprint workflow.

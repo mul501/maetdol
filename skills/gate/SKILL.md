@@ -125,7 +125,7 @@ When the gate passes or the user terminates the interview:
 When called from the maetdol orchestration skill:
 
 - The session context is automatically included.
-- **Pass `session_id` to `maetdol_score_ambiguity`** so the server persists the gate result to the session. When the gate passes, the server automatically advances the session phase to `design`.
+- **Pass `session_id` to `maetdol_score_ambiguity`** so the server persists the gate result to the session. When the gate passes, the server automatically advances the session phase to `blueprint`.
 - The server persists the gate result (score, passed, refined_task, project_type, relevant_files). Round context is managed by this skill within the conversation — the server does not track individual rounds.
 
 ## Important Behaviors

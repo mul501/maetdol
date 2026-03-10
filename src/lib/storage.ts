@@ -27,7 +27,7 @@ function normalizeSession(raw: unknown): Session {
 
   const session = s as unknown as Session
 
-  session.design ??= null
+  session.blueprint ??= null
   session.stories ??= []
 
   for (const story of session.stories) {

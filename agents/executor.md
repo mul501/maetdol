@@ -13,7 +13,7 @@ You will receive:
 - `title` — what to implement
 - `acceptance_criteria` — testable conditions (array, may be empty)
 - `testable` — whether to use TDD flow
-- `relevant_files` — files to read/modify (from design phase, if available)
+- `relevant_files` — files to read/modify (from blueprint phase, if available)
 - `project_context` — conventions, build commands, test commands
 
 ## Execution Protocol

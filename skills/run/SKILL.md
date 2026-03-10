@@ -5,11 +5,11 @@ description: Execute maetdol pipeline from current phase through completion
 
 # Run Skill
 
-Executes the maetdol pipeline from the current session phase through completion. Use `/maetdol-run` to resume after design approval or any interrupted session.
+Executes the maetdol pipeline from the current session phase through completion. Use `/maetdol-run` to resume after blueprint approval or any interrupted session.
 
 ## When to Use
 
-- After `/maetdol` or `/maetdol-design` completes the design phase and the user wants to continue.
+- After `/maetdol` or `/maetdol-blueprint` completes the blueprint phase and the user wants to continue.
 - After a context loss (compression, restart) when the session is mid-pipeline.
 - Any time a session exists and needs to proceed from its current phase.
 
@@ -35,7 +35,7 @@ Route to the appropriate step based on the current phase:
 | Phase | Action |
 |-------|--------|
 | `gate` | Error: "Gate not yet passed. Run `/maetdol` first." |
-| `design` | If `session.design` exists (design recorded), proceed to Step 3. Otherwise error: "Design not yet completed. Run `/maetdol-design` first." |
+| `blueprint` | If `session.blueprint` exists (blueprint recorded), proceed to Step 3. Otherwise error: "Blueprint not yet completed. Run `/maetdol-blueprint` first." |
 | `stories` | Proceed to Step 3 |
 | `decompose` | Proceed to Step 4 |
 | `ralph` | Proceed to Step 5 |
@@ -87,7 +87,7 @@ Iterate through subtasks one by one. Each task is dispatched to the **executor**
 3. Spawn the **executor** agent with:
    - `session_id`, `task_id` from the task
    - `title`, `acceptance_criteria`, `testable` from the task
-   - `relevant_files` from design phase (if available in `session.design`)
+   - `relevant_files` from blueprint phase (if available in `session.blueprint`)
    - `project_context`: build/test commands, conventions from the project
 4. Based on the executor's returned outcome:
    - **completed** → Call `maetdol_tasks` with `{ action: "update", session_id: "<id>", task_id: <id>, status: "completed" }`.
@@ -127,4 +127,5 @@ After all tasks are processed, run verification inline:
 
 - If any `maetdol_*` tool call fails, report the error to the user and attempt recovery.
 - If the session is corrupted, offer to create a new session with `/maetdol`.
+
 - Never re-execute completed tasks. Always read the session state before acting.

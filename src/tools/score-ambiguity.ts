@@ -65,7 +65,7 @@ export function registerScoreAmbiguityTool(server: McpServer) {
             relevant_files,
           }
           if (result.passed) {
-            session.phase = PHASE.design
+            session.phase = PHASE.blueprint
           }
           await saveSession(session)
         }
