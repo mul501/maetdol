@@ -78,25 +78,23 @@ Break the refined task (or each story) into executable subtasks.
 
 ### Step 5: Ralph Loop (Execute Each Task)
 
-Iterate through subtasks one by one.
+Iterate through subtasks one by one. Each task is dispatched to the **executor** agent (Sonnet) for cost-efficient execution.
 
 **For each task:**
 
 1. Call `maetdol_tasks` with `{ action: "next", session_id: "<id>" }` to get the next pending task.
 2. If no tasks remain, go to Step 5b (or Step 6 if no stories).
-3. **If the task is testable**, run the TDD cycle (see ralph skill's "TDD Flow" section):
-   - RED: write failing test → `ralph_iterate` with `tdd_phase="red"`
-   - GREEN: minimal implementation → `ralph_iterate` with `tdd_phase="green"`
-   - REFACTOR: clean up → `ralph_iterate` with `tdd_phase="refactor"`
-4. **If the task is not testable**, execute using standard Claude Code tools (Read, Edit, Write, Bash, etc.).
-5. **Verify** the result — run tests, check output, confirm the change is correct.
-6. **Record** the result via `maetdol_ralph_iterate`:
-   - **Pass:** `{ session_id: "<id>", task_id: <id>, verify_result: "pass", evidence: "<actual output>", criteria_met: [0, 2] }`.
-   - **Fail:** `{ session_id: "<id>", task_id: <id>, verify_result: "fail", error_hash: "<sha256 prefix>", error_summary: "<one-line description>" }`.
-7. **On pass:** Call `maetdol_tasks` with `{ action: "update", session_id: "<id>", task_id: <id>, status: "completed" }`. Return to step 5.1.
-8. **On fail + should_continue:** Fix the issue and go to step 5.5.
-9. **On fail + stagnation detected:** Invoke the **unstuck** skill to get alternative approaches, then retry from step 5.5.
-10. **On fail + max iterations (5) reached:** Call `maetdol_tasks` with `{ action: "update", session_id: "<id>", task_id: <id>, status: "skipped" }`. Log the reason and move to the next task.
+3. Spawn the **executor** agent with:
+   - `session_id`, `task_id` from the task
+   - `title`, `acceptance_criteria`, `testable` from the task
+   - `relevant_files` from design phase (if available in `session.design`)
+   - `project_context`: build/test commands, conventions from the project
+4. Based on the executor's returned outcome:
+   - **completed** → Call `maetdol_tasks` with `{ action: "update", session_id: "<id>", task_id: <id>, status: "completed" }`.
+   - **skipped** → Call `maetdol_tasks` with `{ action: "update", session_id: "<id>", task_id: <id>, status: "skipped" }`. Log the reason.
+   - **stagnation** → Call `maetdol_tasks` with `{ action: "update", session_id: "<id>", task_id: <id>, status: "skipped" }`. Log what was tried.
+   - **no response / error** → Mark task as skipped with reason "executor failed". Log the error and proceed to next task.
+5. Proceed to the next task (return to step 5.1).
 
 ### Step 5b: Story Verification (if stories exist)
 
@@ -112,12 +110,13 @@ When all tasks in a story complete, the server sets the story status to `ready_f
 
 ### Step 6: Final Verification
 
-After all tasks are processed:
+After all tasks are processed, run verification inline:
 
-1. Review the full set of changes made during the session.
-2. Run the project's test suite if one exists.
-3. Verify no regressions were introduced.
-4. Check that skipped tasks (if any) don't block the overall goal.
+1. **Run test suite** — execute the project's test command (e.g., `npm test`, `pytest`, `go test ./...`). Record full output. Skip if no test suite exists.
+2. **Run build** — execute the project's build/typecheck command (e.g., `npm run build`, `npm run typecheck`). Record full output.
+3. **Regression check** — run `git diff` against the session's starting point. Look for unintended side effects, broken imports, or files that shouldn't have changed.
+4. **Skipped task assessment** — if any tasks were skipped, assess whether they block the overall goal.
+5. Report findings to the user before completing the session.
 
 ### Step 7: Complete Session
 
