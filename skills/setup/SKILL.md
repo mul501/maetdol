@@ -108,9 +108,9 @@ Ask the user whether to configure an external review model. Used in two places:
      { "review_cli": "<name>", "review_cli_flags": "<flags>" }
      ```
      Default flags per CLI:
-     - codex: `--print --quiet`
+     - codex: `exec --ephemeral --skip-git-repo-check`
      - claude: `--print`
-     - gemini: (empty string)
+     - gemini: `--prompt ""`
    - Failure → "CLI is not responding. Check your login status." then skip.
 
 5. **Confirmation message**: "Review CLI `<name>` registered. It will be used in plan-review and /maetdol-review."
