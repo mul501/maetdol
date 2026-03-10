@@ -3,7 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { AmbiguityResult } from '../types.js'
 import { loadSession, saveSession } from '../lib/storage.js'
 import { ok, toolError } from '../lib/response.js'
-import { AMBIGUITY_THRESHOLD, DIMENSION_THRESHOLD, PHASE } from '../lib/constants.js'
+import { AMBIGUITY_THRESHOLD, DIMENSION_THRESHOLD, PHASE, AMBIGUITY_WEIGHTS } from '../lib/constants.js'
 
 export function registerScoreAmbiguityTool(server: McpServer) {
   server.registerTool(
@@ -17,26 +17,29 @@ export function registerScoreAmbiguityTool(server: McpServer) {
         goal: z.number().min(0).max(1).describe('Goal clarity score (0.0=vague, 1.0=clear)'),
         constraints: z.number().min(0).max(1).describe('Constraints clarity score (0.0=vague, 1.0=clear)'),
         criteria: z.number().min(0).max(1).describe('Success criteria clarity score (0.0=vague, 1.0=clear)'),
-        context_clarity: z.number().min(0).max(1).default(0).describe('Context clarity: how well the task accounts for existing codebase patterns. Use 0.0 for round 1 (pre-exploration), score properly from round 2+.'),
+        context_clarity: z.number().min(0).max(1).default(0).describe('Context clarity: how well the task accounts for existing codebase/technology patterns. Score based on research findings from round 1+.'),
+        interaction_clarity: z.number().min(0).max(1).default(0).describe('Interaction clarity: how clearly user actions and flows are defined. What can the user do with the result? (0.0=no idea, 1.0=fully specified)'),
         suggestions: z.array(z.string()).optional().describe('Clarifying questions if scores are low'),
         project_type: z.enum(['new', 'existing']).optional().describe('Whether this is a new or existing project'),
         relevant_files: z.array(z.string()).optional().describe('Files relevant to the task, discovered during codebase exploration'),
+        research_findings: z.string().optional().describe('Structured research findings from automated research phase'),
         session_id: z.string().optional().describe('If provided, persist gate result to session'),
       },
     },
-    async ({ context, round, goal, constraints, criteria, context_clarity, suggestions, project_type, relevant_files, session_id }) => {
-      // Round 1: ignore context (pre-exploration), use 3-dim formula
-      // Round 2+: include context clarity as 4th dimension
-      const useContext = round > 1
-      const clarity = useContext
-        ? goal * 0.35 + constraints * 0.25 + criteria * 0.25 + context_clarity * 0.15
-        : goal * 0.4 + constraints * 0.3 + criteria * 0.3
+    async ({ context, round, goal, constraints, criteria, context_clarity, interaction_clarity, suggestions, project_type, relevant_files, research_findings, session_id }) => {
+      const w = round === 1 ? AMBIGUITY_WEIGHTS.round1 : AMBIGUITY_WEIGHTS.round2plus
+      const clarity = goal * w.goal + constraints * w.constraints + criteria * w.criteria
+        + interaction_clarity * w.interaction + context_clarity * w.context
       const ambiguity = Math.round((1.0 - clarity) * 1000) / 1000
 
-      // Find weakest dimension (exclude context in round 1)
-      const scoreEntries: [keyof AmbiguityResult['breakdown'], number][] = useContext
-        ? [['goal', goal], ['constraints', constraints], ['criteria', criteria], ['context', context_clarity]]
-        : [['goal', goal], ['constraints', constraints], ['criteria', criteria]]
+      // Find weakest dimension — all 5 always included
+      const scoreEntries: [keyof AmbiguityResult['breakdown'], number][] = [
+        ['goal', goal],
+        ['constraints', constraints],
+        ['criteria', criteria],
+        ['context', context_clarity],
+        ['interaction', interaction_clarity],
+      ]
       const weakest = scoreEntries.reduce((min, curr) => (curr[1] < min[1] ? curr : min))[0]
 
       const weakDimensions = scoreEntries
@@ -46,7 +49,7 @@ export function registerScoreAmbiguityTool(server: McpServer) {
 
       const result: AmbiguityResult = {
         ambiguity,
-        breakdown: { goal, constraints, criteria, context: context_clarity },
+        breakdown: { goal, constraints, criteria, context: context_clarity, interaction: interaction_clarity },
         passed: ambiguity <= AMBIGUITY_THRESHOLD && weakDimensions.length === 0,
         suggestions: suggestions ?? [],
         weakest_dimension: weakest,
@@ -63,6 +66,7 @@ export function registerScoreAmbiguityTool(server: McpServer) {
             refined_task: context,
             project_type,
             relevant_files,
+            research_findings,
           }
           if (result.passed) {
             session.phase = PHASE.blueprint

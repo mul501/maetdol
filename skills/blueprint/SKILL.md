@@ -21,6 +21,7 @@ Read the session to get:
 - `gate.refined_task` — the gated task description
 - `gate.project_type` — `'new'` or `'existing'` (may be absent for simple tasks)
 - `gate.relevant_files` — files discovered during gate exploration (may be empty)
+- `gate.research_findings` — structured research from the gate phase (codebase patterns, technology context, interaction patterns)
 - `gate.score` — ambiguity score
 
 ### 2. Decide: Skip or Blueprint
@@ -34,11 +35,18 @@ If skipping:
 - Output: "Blueprint skipped — task is simple enough for direct decomposition."
 - Done.
 
-### 2.5. Research (required before blueprint)
+### 2.5. Deep Research (optional — only when gate research is insufficient)
 
-Research on two tracks: **Code Research** + **External Research**. Run both tracks in parallel — they are independent of each other.
+Gate already performed automated research (codebase exploration + external docs). Only do additional research here if:
+- The task requires **API-level detail** not covered in gate research (e.g., exact method signatures, configuration schemas)
+- The task involves **complex integration patterns** between multiple systems
+- `gate.research_findings` explicitly notes gaps or open questions
 
-#### A. Code Research (existing projects) (parallel with B)
+**If gate research is sufficient** → skip directly to Step 3.
+
+**If additional research is needed:**
+
+#### A. Code Research (existing projects)
 
 Skip if `gate.project_type` is `'new'`.
 
@@ -49,7 +57,7 @@ Skip if `gate.project_type` is `'new'`.
    - Check for test files alongside related source files
 3. **Identify conventions**: Identify import style, naming conventions, and error handling patterns.
 
-#### B. External Research (all projects) (parallel with A)
+#### B. External Research
 
 Collect external evidence for libraries, frameworks, or technologies used in the task.
 **Use only available tools** — refer to `research_tools` in `~/.maetdol/config.json`.
@@ -62,12 +70,11 @@ Collect external evidence for libraries, frameworks, or technologies used in the
 2. **Context7 docs lookup** (when context7 is available):
    - Resolve library ID with `mcp__context7__resolve-library-id`
    - Query relevant API/pattern docs with `mcp__context7__query-docs`
-   - E.g.: MCP SDK tool registration, Zod schema patterns, React hook rules, etc.
+   - Focus on API-level details not covered in gate research
 
 3. **Web search** (when web_search is available):
    - When information is not in Context7 or latest changes are needed
    - Search for official docs, best practices, known issues via WebSearch
-   - E.g.: "MCP plugin hooks.json format", "tsup library bundling", etc.
 
 4. **When neither is available**: Skip external research, but note in the blueprint's External References section: "External research tools not configured — can be enabled via `/maetdol-setup`."
 
@@ -78,18 +85,16 @@ Collect external evidence for libraries, frameworks, or technologies used in the
 
 #### C. Consolidate Findings
 
-Merge code research + external research results into notes for the Step 3 blueprint:
+Merge gate research + any additional findings into notes for the Step 3 blueprint:
 
 ```
 ## Research Findings
 
-### Codebase Patterns
-- <patterns and conventions found in code>
+### From Gate Research
+- <key findings from gate.research_findings>
 
-### External References
-- <evidence from Context7/web, with sources>
-  E.g.: "MCP SDK docs: registerTool accepts Zod schema directly (context7)"
-  E.g.: "tsup official docs: external option controls bundle size"
+### Additional Deep Research
+- <new findings from this step, if any>
 
 ### Open Questions
 - <items to confirm with user before blueprint>
@@ -97,17 +102,11 @@ Merge code research + external research results into notes for the Step 3 bluepr
 
 If there are Open Questions, ask the user before proceeding to Step 3.
 
-#### Skip Conditions
-
-- **Code research**: Skip if `new` project.
-- **External research**: Skip if the task is purely internal refactoring (no external library involvement).
-- **Both skipped**: Rare but possible (e.g., simple file rename) → proceed directly to Step 3.
-
 ### 3. Blueprint (when not skipping)
 
 #### For `existing` projects:
 
-1. Proceed with blueprint based on Step 2.5 research findings (code patterns + external evidence).
+1. Proceed with blueprint based on gate research findings + any additional research from Step 2.5.
 2. Identify:
    - **Modules to change** — which existing files need modification and why.
    - **Pattern consistency** — do proposed changes align with existing conventions?
@@ -215,3 +214,4 @@ When called from the maetdol orchestration skill:
 - Keep the summary concise — focus on decisions that affect decomposition, not implementation details.
 - For existing projects, always read the relevant files before producing the blueprint. Don't guess at patterns.
 - If `relevant_files` is empty for an existing project, do a quick codebase scan before producing the blueprint.
+- **Do not duplicate gate research.** Start from `gate.research_findings` and only add deep research when genuinely needed.

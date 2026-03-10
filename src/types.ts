@@ -10,6 +10,7 @@ export interface GateResult {
   refined_task: string
   project_type?: 'new' | 'existing'
   relevant_files?: string[]
+  research_findings?: string
 }
 
 export interface BlueprintResult {
@@ -75,6 +76,7 @@ export interface AmbiguityBreakdown {
   constraints: number
   criteria: number
   context: number
+  interaction: number
 }
 
 export interface AmbiguityResult {
