@@ -50,9 +50,17 @@ Each fix adds more code but the errors keep changing. The solution is growing ou
 
 Errors are varied and no obvious stagnation, but the user invoked unstuck manually.
 
-**Action:** Spawn both **contrarian** and **simplifier** agents.
-- Present both sets of suggestions to the user.
-- Let the user choose which direction to take.
+**Action:** Spawn both **contrarian** and **simplifier** agents. Then use `AskUserQuestion`:
+- Question: "Two alternative approaches are available. Which direction?"
+- Header: "Approach"
+- Options:
+  1. Label: "Contrarian", Description: "<1-sentence summary of contrarian's top suggestion>"
+  2. Label: "Simplifier", Description: "<1-sentence summary of simplifier's top suggestion>"
+  3. Label: "Skip", Description: "Neither — I'll provide my own direction"
+
+- If **Contrarian**: Apply the contrarian agent's top suggestion.
+- If **Simplifier**: Apply the simplifier agent's top suggestion.
+- If **Skip**: Wait for user's custom direction.
 
 ## Session Mode
 

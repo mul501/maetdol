@@ -175,7 +175,17 @@ Output the blueprint summary in a clear format:
 - <any notable risks>
 ```
 
-Ask the user to confirm or adjust before proceeding. This is the **only user checkpoint** in the entire maetdol pipeline. After the user confirms, call `maetdol_blueprint` to record the blueprint (Step 5). Then instruct the user: "Blueprint recorded. Run `/maetdol-run` to start the remaining pipeline (decompose → ralph → verify)."
+After presenting the blueprint, use `AskUserQuestion` to get the user's decision:
+- Question: "How should we proceed with this blueprint?"
+- Header: "Blueprint"
+- Options:
+  1. Label: "Approve", Description: "Accept the blueprint and continue to execution"
+  2. Label: "Revise", Description: "Request specific changes to the blueprint"
+  3. Label: "Cancel", Description: "Cancel this session"
+
+- If **Approve**: Call `maetdol_blueprint` to record (Step 5). In pipeline mode, automatically continue. In standalone mode, instruct user to run `/maetdol-run`.
+- If **Revise**: Incorporate the user's requested changes, regenerate blueprint, present again.
+- If **Cancel**: Do not record. Session remains in `blueprint` phase for later resumption.
 
 ### 5. Record Blueprint
 

@@ -53,8 +53,11 @@ After the interviewer returns its structured response:
 
 1. Parse the response (Q1, Q2, ...). Each question has `type`, `question`, `reason`, and optionally `options` or `suggestions`.
 2. Present questions **one at a time**, using the appropriate UI for each type:
-   - For `choice` type: Use `AskUserQuestion` with `options` parameter (array of option strings). Include the reason in the question text.
-   - For `open` type: Use `AskUserQuestion` without `options`. Include `suggestions` in the question text as reference answers.
+   - For `choice` type: Use `AskUserQuestion` with the interviewer's `options` as option labels.
+   - For `open` type: Use `AskUserQuestion` with the interviewer's `suggestions` converted to options.
+     Each suggestion becomes an option with a short summary as label and full content as description.
+     If only 1 suggestion exists, add a second option: Label: "Different approach", Description: "I have a different idea".
+     AskUserQuestion always includes "Other" automatically for free-text input.
 3. Collect each answer before asking the next question.
 4. **Check for early termination**: If the user responds with "done", "그냥 진행", "충분해", "just do it", "skip", or similar intent to stop the interview — immediately end the gate process. Note remaining ambiguities as assumptions in the output.
 5. Assemble updated context: original task + all Q&A so far.

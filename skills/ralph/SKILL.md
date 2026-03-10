@@ -52,7 +52,7 @@ After each failed iteration, hash the error text and track it.
 
 **If 3 consecutive iterations produce the same error hash:**
 1. The approach is not working. Stop the current fix strategy.
-2. Invoke the **unstuck** skill to get alternative approaches.
+2. **MANDATORY**: Use the Skill tool to invoke: `maetdol:unstuck` to get alternative approaches.
 3. Apply the suggested alternative.
 4. Resume the verify-fix loop (iteration count continues, does not reset).
 
