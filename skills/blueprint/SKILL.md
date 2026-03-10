@@ -147,11 +147,20 @@ Get a second opinion from an external model before sharing the blueprint with th
    - Blueprint summary, files_to_modify, files_to_create
    - Instruction: "Review this coding task blueprint. Identify potential issues, missing considerations, and better approaches. Be concise — 10 bullets max."
 
-3. **Execute CLI** (Bash):
-   `echo "$PROMPT" | <review_cli> <review_cli_flags>`
+3. **Execute CLI** (Bash), redirecting output to file to avoid flooding the context window:
+   ```bash
+   REVIEW_FILE=~/.maetdol/reviews/$(date +%Y%m%d-%H%M%S)-blueprint-review.md
+   mkdir -p ~/.maetdol/reviews
+   echo "$PROMPT" | <review_cli> <review_cli_flags> > "$REVIEW_FILE" 2>"${REVIEW_FILE%.md}.err"
+   echo "Review saved to: $REVIEW_FILE"
+   ```
    Timeout: 120 seconds. On failure/timeout → skip review and proceed to Step 4.
+   If the error log is non-empty, note the CLI errors but still attempt to read the output file.
 
-4. **Save review results**: Retain CLI output to present alongside the blueprint in Step 4.
+4. **Read review results** with a line limit to keep context concise:
+   `Read(REVIEW_FILE, limit=80)`
+   If the file exceeds 80 lines, note that the full review is available at the file path.
+   Retain the results to present alongside the blueprint in Step 4 under "External Review".
 
 ### 4. Present to User
 

@@ -38,9 +38,18 @@ When review CLI is configured:
 
 1. Compose review prompt — include review focus areas:
    - Bugs, security vulnerabilities, error handling, breaking changes, style consistency
-2. Execute CLI (Bash), piping the diff directly:
-   `git diff <range> | <review_cli> <review_cli_flags>`
+2. Execute CLI (Bash), redirecting output to file to avoid flooding the context window:
+   ```bash
+   REVIEW_FILE=~/.maetdol/reviews/$(date +%Y%m%d-%H%M%S)-review.md
+   mkdir -p ~/.maetdol/reviews
+   git diff <range> | <review_cli> <review_cli_flags> > "$REVIEW_FILE" 2>"${REVIEW_FILE%.md}.err"
+   echo "Review saved to: $REVIEW_FILE"
+   ```
    Timeout: 120 seconds. Fall back to inline review on failure/timeout (including CLI not found).
+   If the error log is non-empty, note the CLI errors but still attempt to read the output file.
+3. Read the review file with a line limit to keep context concise:
+   `Read(REVIEW_FILE, limit=80)`
+   If the file exceeds 80 lines, note that the full review is available at the file path.
 
 ### 5. Inline Fallback (when CLI is unavailable or fails)
 
