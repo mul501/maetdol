@@ -1,37 +1,43 @@
+<p align="center">
+  <img src="assets/maetdol-mascot.jpg" alt="maetdol mascot" width="240" />
+</p>
+
 # maetdol (맷돌)
 
-Claude Code productivity plugin. Ambiguity gate, task decomposition, verify-fix loops, and stagnation detection.
+A Claude Code plugin that grinds your tasks from research to working code — one command, start to finish.
 
-## What it does
+## The Problem
 
-1. **Gate** — Scores task ambiguity. If too vague, asks socratic questions until requirements are clear.
-2. **Decompose** — Breaks refined task into subtasks with dependency tracking.
-3. **Ralph** — Executes each task in a verify-fix loop with error tracking.
-4. **Unstuck** — Detects stagnation patterns (spinning, oscillation) and suggests alternative approaches.
+Claude Code is powerful, but left to its own devices it tends to:
 
-## Usage
+- **Dive into ambiguous tasks** without clarifying requirements first, then build the wrong thing
+- **Loop on the same error** five times in a row, hoping it magically fixes itself
+- **Burn through context** on approaches that were doomed from the start
+- **Claim "done"** when the code doesn't actually compile or pass tests
 
-```
-/maetdol "Fix all TypeScript errors in src/"
-```
+You end up spending your time steering the AI instead of reviewing its output.
 
-Sub-commands (work standalone or within a session):
+## The Solution
 
 ```
-/maetdol-gate "Add user authentication"    # Check ambiguity only
-/maetdol-blueprint                          # Requirements analysis and architecture
-/maetdol-unstuck                           # Break out of a stuck loop
-/maetdol-setup                             # Verify plugin setup
-/maetdol-teardown                          # Remove session data and uninstall
+/maetdol "Add OAuth2 login with Google and GitHub providers"
 ```
 
-## Install
+One command. Maetdol handles the rest — research, requirement clarification, planning, execution, and verification. You review the result, not the process.
 
-### Claude Code Plugin (Recommended)
+## How It Works
+
+1. **Gate** — Checks whether your task is clear enough to act on. If not, asks targeted questions until it is.
+2. **Blueprint** — Designs the approach and gets your approval before writing any code.
+3. **Execute** — Works through subtasks in verify-fix loops. When stuck, shifts perspective and retries.
+4. **Verify** — Runs tests, reviews the output, and reports what was done.
+
+## Quick Start
+
+### Plugin Install (Recommended)
 
 ```
-/plugin marketplace add https://github.com/mul501/maetdol
-/plugin install maetdol
+/install-plugin https://github.com/mul501/maetdol
 /maetdol-setup
 ```
 
@@ -44,25 +50,27 @@ npm install
 npm run dev
 ```
 
-## MCP Tools
+## Sub-commands
 
-| Tool | Purpose |
-|------|---------|
-| `maetdol_session` | Session lifecycle (create/get/resume/complete) |
-| `maetdol_tasks` | Task decomposition and dependency management |
-| `maetdol_score_ambiguity` | Ambiguity scoring (accepts pre-computed scores) |
-| `maetdol_ralph_iterate` | Per-task iteration tracking and stagnation detection |
-| `maetdol_detect_stagnation` | Hash-based spinning/oscillation pattern detection |
-| `maetdol_blueprint` | Blueprint decision recording for a session |
-| `maetdol_teardown` | Session data preview and deletion |
+The main command handles everything, but you can also run individual phases:
 
-## Architecture
+```
+/maetdol-setup                              # Verify plugin installation
+/maetdol-gate "Add user authentication"     # Check ambiguity only
+/maetdol-blueprint                          # Design approach for current session
+/maetdol-unstuck                            # Break out of a stuck loop
+/maetdol-teardown                           # Remove session data and uninstall
+```
 
-- **MCP Server** (TypeScript) — Deterministic logic: scoring, hashing, state tracking, file I/O
-- **Skills** (Markdown) — Creative orchestration: question generation, error analysis, persona-based thinking
+## Under the Hood
+
+Three layers work together:
+
+- **MCP Server** (TypeScript) — Scoring, state tracking, dependency graphs
+- **Skills** (Markdown) — Workflow orchestration: question generation, error analysis, persona prompts
 - **Agents** — Specialized personas: interviewer, contrarian, simplifier
 
-State is stored in `~/.maetdol/sessions/`. Sessions survive context compression and process restarts.
+Sessions persist to `~/.maetdol/sessions/` and survive context compression and restarts. See [CLAUDE.md](CLAUDE.md) for architecture details.
 
 ## License
 
