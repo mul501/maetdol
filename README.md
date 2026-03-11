@@ -51,11 +51,10 @@ One command. Maetdol handles the rest — research, requirement clarification, p
    /maetdol-setup
    ```
 
-That's it. From here, just hand your tasks to maetdol:
-
-```
-/maetdol "your task here"
-```
+5. **Hand your tasks to maetdol**
+   ```
+   /maetdol "your task here"
+   ```
 
 ## Sub-commands
 
