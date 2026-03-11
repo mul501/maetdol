@@ -77,6 +77,7 @@ State is generally immutable (spread-copy in `session.ts:86`, `storage.ts:26`). 
 | `MAX_TASK_ITERATIONS` | 5 | `ralph-iterate.ts` | Per-task retry cap. 5 attempts is enough to fix a real issue; more means the approach is wrong. |
 | `MAX_SESSION_ITERATIONS` | 30 | `ralph-iterate.ts` | Session-wide safety net. Prevents runaway sessions across many small tasks. |
 | `STAGNATION_THRESHOLD` | 3 | `ralph-iterate.ts` | Consecutive identical errors before flagging stagnation. 2 could be coincidence; 3 is a pattern. |
+| `BLUEPRINT_SKIP_THRESHOLD` | 0.15 | `constants.ts` | Blueprint 스킵 기준. 매우 명확한 태스크(< 0.15)이고 관련 파일 2개 이하면 아키텍처 설계 생략. |
 
 ## Model Selection
 

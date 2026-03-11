@@ -27,7 +27,7 @@ Read the session to get:
 ### 2. Decide: Skip or Blueprint
 
 **Skip conditions** (all must be true):
-- `gate.score < 0.15` (very clear task)
+- `gate.score < BLUEPRINT_SKIP_THRESHOLD (0.15)` (very clear task)
 - `relevant_files` has 2 or fewer entries (small scope)
 
 If skipping:
