@@ -26,7 +26,7 @@ You are the reviewer AND the analyst. Generate critical findings using these cha
 5. Implementation risk — what part is most likely to break during implementation?
 6. Simpler alternative — is there a meaningfully simpler approach?
 
-> Maintenance note: These directives mirror `skills/blueprint/SKILL.md` Step 3.5.
+> Maintenance note: These directives mirror `skills/blueprint/SKILL.md` Step 3.5 Challenge Directives.
 > If directives change, update both locations.
 
 For each directive, investigate the codebase using Read/Grep/Glob. Generate findings (up to 8).

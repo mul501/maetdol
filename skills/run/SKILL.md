@@ -116,6 +116,7 @@ After all tasks are processed, run verification inline:
 2. **Run build** — execute the project's build/typecheck command (e.g., `npm run build`, `npm run typecheck`). Record full output.
 3. **Code review checkpoint** — **Skip if test suite or build failed above.**
    Capture the full diff once: `git diff {session_start_ref}`.
+   If the diff exceeds 5000 lines, use `git diff --stat {session_start_ref}` instead — pass only the stat summary to the agent.
    Then spawn a `superpowers:code-reviewer` agent (`subagent_type="superpowers:code-reviewer"`) with:
    > Review the complete implementation against the original plan.
    >
