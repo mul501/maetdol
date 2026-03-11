@@ -32,22 +32,29 @@ One command. Maetdol handles the rest — research, requirement clarification, p
 3. **Execute** — Works through subtasks in verify-fix loops. When stuck, shifts perspective and retries.
 4. **Verify** — Runs tests, reviews the output, and reports what was done.
 
-## Quick Start
+## Getting Started
 
-### Plugin Install (Recommended)
+1. **Add the plugin repository**
+   ```
+   /plugin marketplace add https://github.com/mul501/maetdol
+   ```
+
+2. **Install the plugin**
+   ```
+   /plugin install maetdol
+   ```
+
+3. **Restart Claude Code** (required for MCP server activation)
+
+4. **Run setup**
+   ```
+   /maetdol-setup
+   ```
+
+That's it. From here, just hand your tasks to maetdol:
 
 ```
-/install-plugin https://github.com/mul501/maetdol
-/maetdol-setup
-```
-
-### Development
-
-```bash
-git clone https://github.com/mul501/maetdol
-cd maetdol
-npm install
-npm run dev
+/maetdol "your task here"
 ```
 
 ## Sub-commands
