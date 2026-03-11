@@ -137,6 +137,15 @@ After all tasks are processed, run verification inline:
 5. **Skipped task assessment** — if any tasks were skipped, assess whether they block the overall goal.
 6. Report findings to the user before completing the session.
 
+### Step 6.5: Code Simplification (only if Step 6 verification passed)
+
+Skip this step if test suite or build failed in Step 6.
+
+Invoke the built-in `simplify` skill via `Skill(skill: "simplify")`.
+The skill reviews changed code for reuse, quality, and efficiency, then applies fixes.
+
+Include the simplification results in the Step 7 completion output.
+
 ### Step 7: Complete Session
 
 1. Call `maetdol_session` with `{ action: "complete", session_id: "<id>" }`.

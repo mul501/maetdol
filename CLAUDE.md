@@ -43,7 +43,7 @@ All three layers are bundled in this repo. Skills live in `skills/`, agents in `
 
 ### Session lifecycle
 
-`gate`(research→score→interview→walkthrough) → [`blueprint`(design + optional deep research) + `plan-review`] → [`stories`] → `decompose` → `ralph`(+bash-guard) → [`story verify`] → `verify` → `completed`
+`gate`(research→score→interview→walkthrough) → [`blueprint`(design + optional deep research) + `plan-review`] → [`stories`] → `decompose` → `ralph`(+bash-guard) → [`story verify`] → `verify` → [`simplify`] → `completed`
 
 Research happens inside the gate phase (before first scoring), not in blueprint. Blueprint receives `research_findings` from the gate and only does additional deep research when gate findings are insufficient (e.g., API-level detail).
 

@@ -76,7 +76,7 @@ Each tool exports `register*Tool(server: McpServer)` function. Server is passed 
 Skills are subdirectories with `SKILL.md` containing frontmatter (`name`, `description`) and step-by-step instructions for Claude to follow.
 
 ### Agent Personas
-Markdown files with frontmatter specifying `name` and `model` (haiku for contrarian/simplifier, inherit for interviewer).
+Markdown files with frontmatter specifying `name` and `model` (haiku for contrarian/simplifier, sonnet for review-analyst, inherit for interviewer).
 
 ## COMMANDS
 
