@@ -47,32 +47,26 @@ Call `maetdol_session` with `{ action: "complete", session_id: "<id from step 2>
 
 ### 4.5. Research Tools Check
 
-Verify that MCP tools needed for external research in the blueprint phase are installed.
+Verify that Context7 MCP server is installed (WebSearch is always available in Claude Code).
 
 1. **Check Context7**: Attempt to call `mcp__context7__resolve-library-id` with `{ libraryName: "test" }`.
    - Success (response received) → `context7: true`
    - Failure (tool missing/error) → `context7: false`
 
-2. **Check WebSearch**: Verify whether the WebSearch tool is available.
-   - Available → `web_search: true`
-   - Unavailable → `web_search: false`
-
-3. **Save results**: Record `research_tools` in `~/.maetdol/config.json`:
+2. **Save results**: Record `research_tools` in `~/.maetdol/config.json`:
    ```json
    {
      "research_tools": {
-       "context7": true,
-       "web_search": false
+       "context7": true
      }
    }
    ```
    If config.json already exists, update only the `research_tools` field. Otherwise, create a new file.
 
-4. **Report results**:
-   - Both available: "Research tools: Context7 + WebSearch available."
-   - Partial: "Research tools: <available> available. Installing <missing> will improve research quality."
-     - Context7 install: `claude mcp add context7-mcp -- npx -y @context7/mcp`
-   - Neither available: "No external research tools installed. Proceeding with code research only."
+3. **Report results**:
+   - Context7 available: "Research tools: Context7 + WebSearch available."
+   - Context7 unavailable: "Research tools: WebSearch available. Installing Context7 will improve research quality."
+     - Install: `claude mcp add context7-mcp -- npx -y @context7/mcp`
 
 ### 4.6. Review CLI Setup
 

@@ -67,15 +67,13 @@ Spawn an `Explore` agent (`subagent_type="Explore"`, thoroughness="very thorough
 
 #### B. External Research → general-purpose agent
 
-Check tool availability first: Read `research_tools` from `cat ~/.maetdol/config.json 2>/dev/null`.
-- If neither `context7` nor `web_search` is true → skip this agent entirely.
-- If at least one is available → spawn a `general-purpose` agent (`subagent_type="general-purpose"`) with:
+Spawn a `general-purpose` agent (`subagent_type="general-purpose"`) with:
 
 > Research external documentation for: "{refined_task}"
 >
-> Available tools: {list available ones from config}
-> - If context7: Use mcp__context7__resolve-library-id → mcp__context7__query-docs for frameworks/SDKs
-> - If web_search: Use WebSearch for official docs, best practices, known gotchas
+> Available tools: WebSearch{if context7 in config: ", Context7 (mcp__context7__resolve-library-id → mcp__context7__query-docs)"}
+> - Use WebSearch for official docs, best practices, known gotchas
+> - If context7 available: Use mcp__context7__resolve-library-id → mcp__context7__query-docs for frameworks/SDKs
 >
 > Focus on API-level detail not covered in gate research:
 > - Exact method signatures, configuration schemas
@@ -87,7 +85,7 @@ Check tool availability first: Read `research_tools` from `cat ~/.maetdol/config
 > - Integration patterns
 > - Gotchas or limitations found
 
-Launch Agent A immediately. If research tools are available (from config check), launch Agent B in the **same message** as Agent A (parallel). If neither research tool is available, only Agent A runs and note: "External research tools not configured — can be enabled via `/maetdol-setup`."
+Launch Agent A and Agent B in the **same message** (parallel). Read `~/.maetdol/config.json` for Context7 availability to include in Agent B's prompt.
 
 #### C. Consolidate Findings
 

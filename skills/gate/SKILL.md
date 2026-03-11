@@ -38,9 +38,7 @@ After scoring, pass the scores to `maetdol_score_ambiguity` which computes the w
 
 Run BEFORE any scoring. This grounds the entire gate process in facts rather than assumptions.
 
-Launch Agent A immediately. Read `~/.maetdol/config.json` for research tool availability.
-If research tools are available, launch Agent B in the **same message** as Agent A (parallel).
-If not available, only Agent A runs.
+Launch Agent A and Agent B in the **same message** (parallel). Read `~/.maetdol/config.json` for Context7 availability.
 
 #### A. Codebase Exploration → Explore agent
 
@@ -62,15 +60,13 @@ Spawn an `Explore` agent (`subagent_type="Explore"`, thoroughness="medium") with
 
 #### B. External Research → general-purpose agent
 
-Check tool availability first: Read `research_tools` from `cat ~/.maetdol/config.json 2>/dev/null`.
-- If neither `context7` nor `web_search` is true → skip this agent entirely.
-- If at least one is available → spawn a `general-purpose` agent (`subagent_type="general-purpose"`) with:
+Spawn a `general-purpose` agent (`subagent_type="general-purpose"`) with:
 
 > Research external documentation for: "{task_description}"
 >
-> Available tools: {list available ones from config}
-> - If context7: Use mcp__context7__resolve-library-id → mcp__context7__query-docs for frameworks/SDKs
-> - If web_search: Use WebSearch for official docs, best practices, known gotchas
+> Available tools: WebSearch{if context7 in config: ", Context7 (mcp__context7__resolve-library-id → mcp__context7__query-docs)"}
+> - Use WebSearch for official docs, best practices, known gotchas
+> - If context7 available: Use mcp__context7__resolve-library-id → mcp__context7__query-docs for frameworks/SDKs
 >
 > Focus on:
 > - How the technology works (serving, rendering, interaction patterns)
