@@ -106,6 +106,40 @@ Ask the user whether to configure an external review model. Used in two places:
 
 5. **Confirmation message**: "Review CLI `<name>` registered. It will be used in blueprint review and /maetdol-review."
 
+### 4.7. Active Session Hook
+
+Register a `UserPromptSubmit` hook that detects active maetdol sessions after context compression.
+
+1. **Determine plugin path**: Find the maetdol plugin directory containing `hooks/active-session-check.sh`.
+   - Check: `ls ~/.claude/plugins/maetdol/hooks/active-session-check.sh 2>/dev/null` (marketplace install)
+   - Fallback: the repo root if running from source (check `git rev-parse --show-toplevel`)
+
+2. **Read existing settings**: `cat ~/.claude/settings.json 2>/dev/null`
+   - If the file already contains `active-session-check.sh` in a hook command → skip (already registered). Output: "Active session hook already registered."
+   - Otherwise → proceed.
+
+3. **Register hook**: Add a `UserPromptSubmit` hook entry to `~/.claude/settings.json`:
+   ```json
+   {
+     "hooks": {
+       "UserPromptSubmit": [
+         {
+           "matcher": "",
+           "hooks": [
+             {
+               "type": "command",
+               "command": "<plugin_path>/hooks/active-session-check.sh"
+             }
+           ]
+         }
+       ]
+     }
+   }
+   ```
+   Merge with existing hooks — do not overwrite other hook entries.
+
+4. **Confirm**: "Active session hook registered. After context compression, you'll see a reminder to resume active sessions."
+
 ### 5. Success Summary
 
 Display:

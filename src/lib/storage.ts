@@ -27,6 +27,7 @@ function normalizeSession(raw: unknown): Session {
 
   const session = s as unknown as Session
 
+  session.checkpoint ??= null
   session.blueprint ??= null
   session.stories ??= []
 

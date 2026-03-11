@@ -42,13 +42,13 @@ All three layers are bundled in this repo. Skills live in `skills/`, agents in `
 
 ### Session lifecycle
 
-`gate`(research→score→interview→walkthrough) → [`blueprint`(design + optional deep research) + `plan-review`] → [`stories`] → `decompose` → `ralph` → [`story verify`] → `verify` → [`simplify`] → `completed`
+`gate`(research→score→interview→walkthrough) → [`blueprint`(design + optional deep research) + `plan-review`] → [`stories`] → `decompose` → `ralph` → [`story verify`] → `verify` → [`simplify`] → [`external review`] → `completed`
 
 Research happens inside the gate phase (before first scoring), not in blueprint. Blueprint receives `research_findings` from the gate and only does additional deep research when gate findings are insufficient (e.g., API-level detail).
 
 The `blueprint` phase is optional — simple/clear tasks can skip it. The `stories` phase is optional — only for complex tasks with 3+ subtasks. Simple tasks skip directly from gate to decompose. Story verification happens automatically as task groups complete.
 
-Sessions persist to `~/.maetdol/sessions/{id}.json` and survive context compression and process restarts.
+Sessions persist to `~/.maetdol/sessions/{id}.json` and survive context compression and process restarts. Each session has a `checkpoint` field updated at milestones — after compression, the `UserPromptSubmit` hook detects active sessions and the run skill uses `checkpoint` to resume at the exact sub-step, not just the phase start.
 
 ## Code Patterns
 
@@ -97,4 +97,7 @@ The interviewer agent (skill-side) inherits the caller's model. The contrarian a
 - **Review CLI is registered in setup**: No auto-detection. `/maetdol-setup` asks the user, verifies, and saves to config.json.
 - **Plan review is graceful**: Silently skips the review step if no external CLI is registered. Does not break the blueprint workflow.
 - **Completed session cleanup**: `session complete` deletes the session file immediately. Completed sessions are not preserved on disk — the response includes the completed session object but the file is already gone. `teardown confirm` with `session_id` can delete individual in-progress sessions.
+- **Checkpoint field**: `session.checkpoint` (string | null, max 200 chars) records sub-step progress within a phase. Format examples: `ralph:task3/5:done`, `verify:tests_passed`. Saved via `maetdol_session save_checkpoint`. The run skill saves checkpoints at each milestone; after context compression, it reads the checkpoint to resume at the exact sub-step rather than replaying the entire phase.
+- **Active session hook**: `hooks/active-session-check.sh` is a `UserPromptSubmit` hook registered by `/maetdol-setup` (Step 4.7). It computes project_id from git remote/cwd, scans `~/.maetdol/sessions/` for matching execution-phase sessions (`ralph`, `decompose`, `verify`, `stories`), and outputs a reminder with session ID, checkpoint, and resume instructions. Gate/blueprint sessions are excluded (user is already interacting).
+- **Step 6.6 — Final External Review**: After simplification (Step 6.5), if an external review CLI is configured, the run skill sends the full diff for review, applies actionable fixes, and re-runs tests. Uses synchronous execution (never `run_in_background`). Distinct from Step 6.3 (internal code-reviewer agent for plan alignment) — Step 6.6 uses an external model for a fresh perspective on bugs and security.
 - **Independent verification**: The verifier agent (`agents/verifier.md`, Haiku) independently checks acceptance criteria without seeing the executor's evidence. Server-side evidence quality checks (`MIN_EVIDENCE_LENGTH`, newline check, unmet criteria warning) run on every `ralph_iterate` pass and populate `evidence_warnings` in the result. The run skill uses `evidence_warnings` to decide whether independent verification is needed — clean tasks (no warnings) skip it. Story verification (Step 5b) always uses the verifier. Final verification (Step 6, step 3.5) only triggers for non-story sessions with warned tasks. Max 2 rejection rounds before escalating to the user.

@@ -7,6 +7,24 @@ description: Execute maetdol pipeline from current phase through completion
 
 Executes the maetdol pipeline from the current session phase through completion. Use `/maetdol-run` to resume after blueprint approval or any interrupted session.
 
+## Context Compression Resilience
+
+After context compression, the active session hook outputs a reminder with session ID and checkpoint.
+When you see this reminder (or when resuming any session):
+
+1. Call `maetdol_session` with `{ action: "resume", ... }`.
+2. Read the `checkpoint` field from `resume_point`.
+3. Route to the correct **sub-step** within the phase — not just the phase start:
+   - `stories:N_stories` → Step 3 completed, go to Step 4
+   - `decompose:N_tasks` → Step 4 completed, go to Step 5
+   - `ralph:taskN/total:done` → Step 5 in progress, continue from task N+1
+   - `stories_verified` → Step 5b completed, go to Step 6
+   - `verify:tests_passed` → Step 6.1 done, continue from Step 6.2
+   - `verify:build_passed` → Step 6.2 done, continue from Step 6.3
+   - `verify:review_done` → Step 6.3 done, continue from Step 6.5
+   - `verify:simplified` → Step 6.5 done, continue from Step 6.6
+   - `null` or unrecognized → fall back to phase-level routing (Step 2)
+
 ## When to Use
 
 - After `/maetdol` or `/maetdol-blueprint` completes the blueprint phase and the user wants to continue.
@@ -57,6 +75,7 @@ For complex tasks that will decompose into 3+ subtasks, structure the refined re
    - Dependencies on other stories via `depends_on`
 3. Call `maetdol_tasks` with `{ action: "decompose_stories", session_id: "<id>", stories: [{ id: "US-001", title, acceptance_criteria, depends_on }] }`.
 4. The server stores stories and advances phase to `decompose`.
+5. **Checkpoint**: Call `maetdol_session` with `{ action: "save_checkpoint", session_id: "<id>", checkpoint: "stories:<N>_stories" }`.
 
 ### Step 4: Decompose (break stories/task into executable subtasks)
 
@@ -75,6 +94,7 @@ Break the refined task (or each story) into executable subtasks.
    - Refactoring with existing test coverage → `testable: false` (existing tests act as guard)
 5. Call `maetdol_tasks` with `{ action: "decompose", session_id: "<id>", tasks: [{ id, title, depends_on, acceptance_criteria, story_id, testable }] }`.
 6. The server stores the task list and returns task IDs with criteria progress tracking.
+7. **Checkpoint**: Call `maetdol_session` with `{ action: "save_checkpoint", session_id: "<id>", checkpoint: "decompose:<N>_tasks" }`.
 
 ### Step 5: Ralph Loop (Execute Each Task)
 
@@ -94,7 +114,8 @@ Iterate through subtasks one by one. Each task is dispatched to the **executor**
    - **skipped** → Call `maetdol_tasks` with `{ action: "update", session_id: "<id>", task_id: <id>, status: "skipped" }`. Log the reason.
    - **stagnation** → Call `maetdol_tasks` with `{ action: "update", session_id: "<id>", task_id: <id>, status: "skipped" }`. Log what was tried.
    - **no response / error** → Mark task as skipped with reason "executor failed". Log the error and proceed to next task.
-5. Proceed to the next task (return to step 5.1).
+5. **Checkpoint**: Call `maetdol_session` with `{ action: "save_checkpoint", session_id: "<id>", checkpoint: "ralph:task<N>/<total>:done" }` (where N = completed task number, total = total tasks).
+6. Proceed to the next task (return to step 5.1).
 
 ### Step 5b: Story Verification (if stories exist)
 
@@ -130,14 +151,18 @@ VERIFY_LOOP:
      - When remediation completes, story returns to `ready_for_verify`.
      - GOTO VERIFY_LOOP.
 
-4. Once all stories are verified, proceed to Step 6.
+4. Once all stories are verified:
+   - **Checkpoint**: Call `maetdol_session` with `{ action: "save_checkpoint", session_id: "<id>", checkpoint: "stories_verified" }`.
+   - Proceed to Step 6.
 
 ### Step 6: Final Verification
 
 After all tasks are processed, run verification inline:
 
 1. **Run test suite** — execute the project's test command (e.g., `npm test`, `pytest`, `go test ./...`). Record full output. Skip if no test suite exists.
+   - On pass: **Checkpoint**: `maetdol_session save_checkpoint` → `"verify:tests_passed"`.
 2. **Run build** — execute the project's build/typecheck command (e.g., `npm run build`, `npm run typecheck`). Record full output.
+   - On pass: **Checkpoint**: `maetdol_session save_checkpoint` → `"verify:build_passed"`.
 3. **Code review checkpoint** — **Skip if test suite or build failed above.**
    Capture the full diff once: `git diff {session_start_ref}`.
    If the diff exceeds 5000 lines, use `git diff --stat {session_start_ref}` instead — pass only the stat summary to the agent.
@@ -158,6 +183,7 @@ After all tasks are processed, run verification inline:
 
    If the agent reports critical/high findings, present them to the user before completing.
    Low/medium findings are noted in the completion summary.
+   - **Checkpoint**: `maetdol_session save_checkpoint` → `"verify:review_done"`.
 
 3.5. **Independent criteria verification** — **Only for sessions without stories. Skip if stories exist (Step 5b already verified).**
    Re-derive which tasks need verification from session state (resilient to context compression):
@@ -205,6 +231,43 @@ Invoke the built-in `simplify` skill via `Skill(skill: "simplify")`.
 The skill reviews changed code for reuse, quality, and efficiency, then applies fixes.
 
 Include the simplification results in the Step 7 completion output.
+
+**Checkpoint**: `maetdol_session save_checkpoint` → `"verify:simplified"`.
+
+### Step 6.6: Final External Review (optional — external CLI only)
+
+**Skip this step if:**
+- Step 6 tests or build failed
+- `~/.maetdol/config.json` has no `review_cli` configured
+
+1. Read `review_cli` and `review_cli_flags` from `~/.maetdol/config.json`.
+   - If not configured → skip to Step 7.
+2. Capture full diff: `git diff {session_start_ref}` (reuse from Step 6.3).
+3. Compose review prompt:
+   ```
+   You are reviewing a completed implementation. Focus on bugs, security issues, and missing error handling.
+
+   ## Task
+   <refined_task from session>
+
+   ## Diff
+   <full diff, or --stat if >5000 lines>
+
+   For each finding: state the problem, severity (critical/high/medium), and suggested fix.
+   Maximum 10 findings. Skip style and formatting issues.
+   ```
+4. **CRITICAL: Do NOT use `run_in_background: true`.** Execute synchronously:
+   ```bash
+   REVIEW_FILE=~/.maetdol/reviews/$(date +%Y%m%d-%H%M%S)-final-review.md
+   mkdir -p ~/.maetdol/reviews
+   echo "$PROMPT" | <review_cli> <review_cli_flags> > "$REVIEW_FILE" 2>"${REVIEW_FILE%.md}.err"
+   ```
+   Timeout: 180 seconds. On failure/timeout → skip to Step 7.
+5. Read results: `Read(REVIEW_FILE, limit=80)`.
+6. For actionable issues (bugs, security, missing error handling):
+   - Apply fixes directly.
+   - Re-run tests to confirm no regression.
+7. Include review findings and any fixes in the Step 7 completion summary.
 
 ### Step 7: Complete Session
 

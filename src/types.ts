@@ -64,6 +64,7 @@ export interface Session {
   stories: UserStory[]
   tasks: TaskItem[]
   current_task_id: number | null
+  checkpoint: string | null
   unstuck: { activations: number; personas_used: string[] }
   created_at: string
   updated_at: string

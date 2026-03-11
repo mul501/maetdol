@@ -177,7 +177,8 @@ Get a critical second opinion, then verify findings against the codebase. Review
    Maximum 8 findings. Skip trivial issues.
    ```
 
-3. **Execute CLI** (Bash), redirecting output to file to avoid flooding the context window:
+3. **Execute CLI** (Bash). **CRITICAL: Do NOT use `run_in_background: true`.** Review results must arrive before proceeding — synchronous execution only.
+   Redirect output to file to avoid flooding the context window:
    ```bash
    REVIEW_FILE=~/.maetdol/reviews/$(date +%Y%m%d-%H%M%S)-blueprint-review.md
    mkdir -p ~/.maetdol/reviews
