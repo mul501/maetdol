@@ -53,6 +53,17 @@ function normalizeSession(raw: unknown): Session {
   return session
 }
 
+export async function deleteSession(id: string): Promise<boolean> {
+  await dirReady
+  const path = join(SESSIONS_DIR, `${id}.json`)
+  try {
+    await rm(path)
+    return true
+  } catch {
+    return false
+  }
+}
+
 export async function loadSession(id: string): Promise<Session | null> {
   await dirReady
   const path = join(SESSIONS_DIR, `${id}.json`)

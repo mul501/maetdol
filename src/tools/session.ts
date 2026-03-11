@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { randomUUID } from 'node:crypto'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { Session } from '../types.js'
-import { loadSession, saveSession, findActiveSession } from '../lib/storage.js'
+import { loadSession, saveSession, findActiveSession, deleteSession } from '../lib/storage.js'
 import { shortHash } from '../lib/hash.js'
 import { ok, toolError } from '../lib/response.js'
 import { PHASE } from '../lib/constants.js'
@@ -87,8 +87,8 @@ export function registerSessionTool(server: McpServer) {
           if (!session_id) return toolError('session_id is required for complete')
           const session = await loadSession(session_id)
           if (!session) return toolError(`Session ${session_id} not found`)
+          await deleteSession(session_id)
           const completed: Session = { ...session, phase: PHASE.completed }
-          await saveSession(completed)
           return ok({ session: completed, is_resumed: false, resume_point: null })
         }
 

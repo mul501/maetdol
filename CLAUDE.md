@@ -95,3 +95,4 @@ The interviewer agent (skill-side) inherits the caller's model. The contrarian a
 - **`dist/` commit rule**: When `src/` or `package.json` dependencies change, always run `npm run build` and commit `dist/server.js` together. Marketplace users have no `node_modules/` — they run `node dist/server.js` directly. Source/bundle mismatch breaks user environments.
 - **Review CLI is registered in setup**: No auto-detection. `/maetdol-setup` asks the user, verifies, and saves to config.json.
 - **Plan review is graceful**: Silently skips the review step if no external CLI is registered. Does not break the blueprint workflow.
+- **Completed session cleanup**: `session complete` deletes the session file immediately. Completed sessions are not preserved on disk — the response includes the completed session object but the file is already gone. `teardown confirm` with `session_id` can delete individual in-progress sessions.
