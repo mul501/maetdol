@@ -37,13 +37,12 @@ Three layers, each with a clear responsibility boundary:
 | **Server** | `src/` (TypeScript) | Deterministic logic: scoring math, hash comparison, state persistence, dependency graphs | State and computation go here |
 | **Skills** | `.claude/skills/` (Markdown) | Creative orchestration: question generation, error analysis, persona prompts | Workflow choreography goes here |
 | **Agents** | `.claude/agents/` (Markdown) | Specialized personas: interviewer, contrarian, simplifier | Perspective shifts go here |
-| **Hooks** | `hooks/` (JavaScript) | Safety guards: destructive command blocking | Always-on bash safety |
 
 All three layers are bundled in this repo. Skills live in `skills/`, agents in `agents/`. The `.claude-plugin/plugin.json` references them for plugin marketplace discovery.
 
 ### Session lifecycle
 
-`gate`(research→score→interview→walkthrough) → [`blueprint`(design + optional deep research) + `plan-review`] → [`stories`] → `decompose` → `ralph`(+bash-guard) → [`story verify`] → `verify` → [`simplify`] → `completed`
+`gate`(research→score→interview→walkthrough) → [`blueprint`(design + optional deep research) + `plan-review`] → [`stories`] → `decompose` → `ralph` → [`story verify`] → `verify` → [`simplify`] → `completed`
 
 Research happens inside the gate phase (before first scoring), not in blueprint. Blueprint receives `research_findings` from the gate and only does additional deep research when gate findings are insufficient (e.g., API-level detail).
 
@@ -94,6 +93,5 @@ The interviewer agent (skill-side) inherits the caller's model. The contrarian a
 - **Ambiguity formula**: 5 dimensions (goal, constraints, criteria, context, interaction). Round 1 (post-research, pre-interview): `goal×0.30 + constraints×0.20 + criteria×0.20 + interaction×0.15 + context×0.15`. Round 2+: `goal×0.25 + constraints×0.20 + criteria×0.20 + interaction×0.15 + context×0.20`. The `interaction` dimension measures how clearly user actions/flows are defined. Response includes `weakest_dimension` and `weak_dimensions` for targeted interviewing.
 - **Stagnation detection uses two patterns**: Spinning (last 3 hashes identical) and oscillation (ABAB pattern in last 4 hashes). Each maps to a different persona recommendation.
 - **`dist/` commit rule**: When `src/` or `package.json` dependencies change, always run `npm run build` and commit `dist/server.js` together. Marketplace users have no `node_modules/` — they run `node dist/server.js` directly. Source/bundle mismatch breaks user environments.
-- **Bash-guard is always active**: PreToolUse hook applies to all Bash calls regardless of session state. Fail-open — allows the command on hook error.
 - **Review CLI is registered in setup**: No auto-detection. `/maetdol-setup` asks the user, verifies, and saves to config.json.
 - **Plan review is graceful**: Silently skips the review step if no external CLI is registered. Does not break the blueprint workflow.
