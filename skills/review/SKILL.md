@@ -29,7 +29,7 @@ Reviews code changes using an external model CLI, or falls back to inline Claude
 
 - Read `review_cli` from `cat ~/.maetdol/config.json 2>/dev/null`.
 - If not configured → inline fallback (Claude Code reviews directly).
-  "Review CLI is not configured. You can register one via `/maetdol-setup`."
+  "Review CLI is not configured. Using inline review. You can register one via `/maetdol-setup`."
 - If configured → proceed to external review.
 
 ### 4. External Review
@@ -53,10 +53,27 @@ When review CLI is configured:
 
 ### 5. Inline Fallback (when CLI is unavailable or fails)
 
-Claude Code analyzes the diff directly without an external CLI:
-- Read and analyze the diff directly
-- Apply the same review focus areas
-- Output results in the same format
+Spawn a `superpowers:code-reviewer` agent (`subagent_type="superpowers:code-reviewer"`) with:
+
+> Review the following code changes.
+>
+> ## Diff Range
+> {diff range from Step 1}
+>
+> ## Changes
+> {diff content, or git diff --stat if over 5000 lines}
+>
+> ## Focus Areas
+> - Bugs and logic errors
+> - Security vulnerabilities
+> - Error handling gaps
+> - Breaking changes
+> - Style consistency with existing codebase
+>
+> Maximum 15 findings. Prioritize critical/high severity.
+> Format each finding as: [severity] file:line — description
+
+Parse the agent's response and format it according to Step 6's output format.
 
 ### 6. Present Results
 

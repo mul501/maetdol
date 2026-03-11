@@ -114,9 +114,28 @@ After all tasks are processed, run verification inline:
 
 1. **Run test suite** — execute the project's test command (e.g., `npm test`, `pytest`, `go test ./...`). Record full output. Skip if no test suite exists.
 2. **Run build** — execute the project's build/typecheck command (e.g., `npm run build`, `npm run typecheck`). Record full output.
-3. **Regression check** — run `git diff` against the session's starting point. Look for unintended side effects, broken imports, or files that shouldn't have changed.
-4. **Skipped task assessment** — if any tasks were skipped, assess whether they block the overall goal.
-5. Report findings to the user before completing the session.
+3. **Code review checkpoint** — **Skip if test suite or build failed above.**
+   Capture the full diff once: `git diff {session_start_ref}`.
+   Then spawn a `superpowers:code-reviewer` agent (`subagent_type="superpowers:code-reviewer"`) with:
+   > Review the complete implementation against the original plan.
+   >
+   > ## Task
+   > {refined_task from session}
+   >
+   > ## Blueprint
+   > {summary from session.blueprint}
+   >
+   > ## Diff
+   > {captured diff content, or --stat summary if over 5000 lines}
+   >
+   > Verify: implementation matches the plan, no scope creep, no missed requirements.
+   > Maximum 10 findings. Focus on plan alignment and correctness.
+
+   If the agent reports critical/high findings, present them to the user before completing.
+   Low/medium findings are noted in the completion summary.
+4. **Regression check** — analyze the same diff captured in step 3 for unintended side effects, broken imports, or files that shouldn't have changed.
+5. **Skipped task assessment** — if any tasks were skipped, assess whether they block the overall goal.
+6. Report findings to the user before completing the session.
 
 ### Step 7: Complete Session
 

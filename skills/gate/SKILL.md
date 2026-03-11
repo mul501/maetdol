@@ -38,32 +38,53 @@ After scoring, pass the scores to `maetdol_score_ambiguity` which computes the w
 
 Run BEFORE any scoring. This grounds the entire gate process in facts rather than assumptions.
 
-Run A and B in parallel — they are independent of each other. Assemble findings in C after both complete.
+Launch Agent A immediately. Read `~/.maetdol/config.json` for research tool availability.
+If research tools are available, launch Agent B in the **same message** as Agent A (parallel).
+If not available, only Agent A runs.
 
-#### A. Codebase Exploration (existing projects) — parallel with B
+#### A. Codebase Exploration → Explore agent
 
-1. Use Glob to survey project structure (`src/**`, `package.json`, `tsconfig.json`, `*.py`, `*.go`, etc.).
-2. Use Grep to search for task-related keywords (function names, module names, patterns).
-3. Use Read to examine key files (entry points, config, files matching task keywords).
-4. Determine `project_type`: source files exist → `'existing'`, no source files → `'new'`.
+Spawn an `Explore` agent (`subagent_type="Explore"`, thoroughness="medium") with this prompt:
 
-#### B. External Research (all projects) — parallel with A
+> Explore the codebase for context related to: "{task_description}"
+>
+> 1. Survey project structure (src/**, package.json, tsconfig.json, *.py, *.go, etc.)
+> 2. Search for task-related keywords (function names, module names, patterns)
+> 3. Examine key files (entry points, config, files matching task keywords)
+> 4. Determine project_type: source files exist → 'existing', no source files → 'new'
+>
+> Return a structured summary:
+> - Project type (new/existing)
+> - Project structure overview
+> - Relevant files found (with paths)
+> - Existing conventions and patterns related to the task
+> - Key code snippets that inform the task
 
-1. Check tool availability: Read `research_tools` from `cat ~/.maetdol/config.json 2>/dev/null`.
-   - `context7: true` → Context7 available
-   - `web_search: true` → WebSearch available
-   - Neither → skip external research
-2. For frameworks/SDKs mentioned in the task:
-   - Look up how the technology works (Context7 `resolve-library-id` → `query-docs`)
-   - Specifically investigate: how does this technology serve/render UI? What are standard interaction patterns?
-   - Search for known gotchas, limitations, required configurations
-3. For tasks involving UI or user-facing output:
-   - How does the target platform handle user interaction?
-   - What are the standard patterns for CRUD, navigation, feedback?
+#### B. External Research → general-purpose agent
+
+Check tool availability first: Read `research_tools` from `cat ~/.maetdol/config.json 2>/dev/null`.
+- If neither `context7` nor `web_search` is true → skip this agent entirely.
+- If at least one is available → spawn a `general-purpose` agent (`subagent_type="general-purpose"`) with:
+
+> Research external documentation for: "{task_description}"
+>
+> Available tools: {list available ones from config}
+> - If context7: Use mcp__context7__resolve-library-id → mcp__context7__query-docs for frameworks/SDKs
+> - If web_search: Use WebSearch for official docs, best practices, known gotchas
+>
+> Focus on:
+> - How the technology works (serving, rendering, interaction patterns)
+> - Standard patterns for the task type (CRUD, navigation, feedback)
+> - Known gotchas, limitations, required configurations
+>
+> Return a structured summary:
+> - Technology context (SDK/framework behavior, constraints)
+> - Interaction patterns (how this tech handles user actions, UI serving, data flow)
+> - Gotchas or limitations found
 
 #### C. Structure Research Findings
 
-Assemble findings into a structured block:
+After both agents return, assemble findings into:
 
 ```markdown
 ## Research Findings
@@ -118,9 +139,9 @@ After the interviewer returns its structured response:
    - If `interaction` is in `weak_dimensions`, instruct: "Include interaction-focused questions (user actions, flows, feedback)."
    - "Also perform Contrarian challenge in this round."
 2. Follow the "Presenting Interviewer Questions" process above.
-3. Identify `relevant_files` during codebase exploration:
-   - Use Grep with task-related keywords to find relevant source files.
-   - Collect file paths the interviewer explored or referenced.
+3. Assemble `relevant_files` from Step 0 research:
+   - Extract file paths from the Explore agent's response.
+   - Add any files the interviewer referenced during Q&A.
    - Include only files directly relevant to the task (not every file in the project).
 4. Re-score the task yourself with the new context. Score all 5 dimensions.
 5. Call `maetdol_score_ambiguity` with `{ context: "<updated context>", round: 2, goal, constraints, criteria, context_clarity, interaction_clarity, suggestions, project_type, relevant_files, research_findings }`.

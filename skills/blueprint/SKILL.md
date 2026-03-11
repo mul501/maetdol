@@ -46,42 +46,48 @@ Gate already performed automated research (codebase exploration + external docs)
 
 **If additional research is needed:**
 
-#### A. Code Research (existing projects)
+#### A. Code Research → Explore agent (existing projects only)
 
 Skip if `gate.project_type` is `'new'`.
 
-1. **Read files**: Read each file in `gate.relevant_files` in full using Read. Full files, not scans.
-2. **Search patterns**: Search for code patterns related to the task using Grep.
-   - If the task mentions function/class/module names → search for usage sites
-   - If the task implies a code pattern (e.g., "add a tool") → search for existing instances (e.g., `registerTool`)
-   - Check for test files alongside related source files
-3. **Identify conventions**: Identify import style, naming conventions, and error handling patterns.
+Spawn an `Explore` agent (`subagent_type="Explore"`, thoroughness="very thorough") with:
 
-#### B. External Research
+> Deep-dive into the codebase for: "{refined_task}"
+>
+> Files to read in full: {gate.relevant_files}
+> (If no files listed, explore the src/ directory broadly for files related to the task.)
+>
+> 1. Read each file in full — understand structure, not just keywords
+> 2. Search for code patterns: {task-related function/class/module names}
+> 3. Search for existing instances of the pattern (e.g., registerTool, routes, handlers)
+> 4. Check for test files alongside related source files
+> 5. Identify import style, naming conventions, error handling patterns
+>
+> Return: detailed analysis of relevant code patterns, conventions, and test coverage
 
-Collect external evidence for libraries, frameworks, or technologies used in the task.
-**Use only available tools** — refer to `research_tools` in `~/.maetdol/config.json`.
+#### B. External Research → general-purpose agent
 
-1. **Check tool availability**: Read `research_tools` from `cat ~/.maetdol/config.json 2>/dev/null`.
-   - `context7: true` → Context7 available
-   - `web_search: true` → WebSearch available
-   - No config or both false → skip external research. Proceed with code research only.
+Check tool availability first: Read `research_tools` from `cat ~/.maetdol/config.json 2>/dev/null`.
+- If neither `context7` nor `web_search` is true → skip this agent entirely.
+- If at least one is available → spawn a `general-purpose` agent (`subagent_type="general-purpose"`) with:
 
-2. **Context7 docs lookup** (when context7 is available):
-   - Resolve library ID with `mcp__context7__resolve-library-id`
-   - Query relevant API/pattern docs with `mcp__context7__query-docs`
-   - Focus on API-level details not covered in gate research
+> Research external documentation for: "{refined_task}"
+>
+> Available tools: {list available ones from config}
+> - If context7: Use mcp__context7__resolve-library-id → mcp__context7__query-docs for frameworks/SDKs
+> - If web_search: Use WebSearch for official docs, best practices, known gotchas
+>
+> Focus on API-level detail not covered in gate research:
+> - Exact method signatures, configuration schemas
+> - Complex integration patterns between systems
+> - Known gotchas, limitations, required configurations
+>
+> Return a structured summary:
+> - Technology context (API details, constraints)
+> - Integration patterns
+> - Gotchas or limitations found
 
-3. **Web search** (when web_search is available):
-   - When information is not in Context7 or latest changes are needed
-   - Search for official docs, best practices, known issues via WebSearch
-
-4. **When neither is available**: Skip external research, but note in the blueprint's External References section: "External research tools not configured — can be enabled via `/maetdol-setup`."
-
-5. **Assess applicability**: Determine how to apply findings to the task:
-   - If official docs recommend a pattern → reflect in blueprint
-   - If known gotchas exist → note in Risks
-   - If uncertain areas remain → ask the user
+Launch Agent A immediately. If research tools are available (from config check), launch Agent B in the **same message** as Agent A (parallel). If neither research tool is available, only Agent A runs and note: "External research tools not configured — can be enabled via `/maetdol-setup`."
 
 #### C. Consolidate Findings
 
@@ -133,18 +139,45 @@ If there are Open Questions, ask the user before proceeding to Step 3.
    - Key decisions and rationale.
    - Dependencies (if any).
 
-### 3.5. Plan Review (external model review)
+### 3.5. Plan Review (external or internal model review)
 
-Get a second opinion from an external model before sharing the blueprint with the user.
+Get a critical second opinion, then verify findings against the codebase. Review always happens — either via an external CLI or an internal agent.
 
 1. **Check config**: Read `review_cli` from `cat ~/.maetdol/config.json 2>/dev/null`.
-   - If configured → proceed to step 2.
-   - If not configured → skip review. Proceed to Step 4.
+   - If configured → proceed to step 2 (external path).
+   - If not configured → skip to step 5 (internal path).
 
 2. **Compose review prompt** as a shell variable `PROMPT` containing:
-   - gate.refined_task
-   - Blueprint summary, files_to_modify, files_to_create
-   - Instruction: "Review this coding task blueprint. Identify potential issues, missing considerations, and better approaches. Be concise — 10 bullets max."
+   ```
+   You are a critical reviewer examining a coding blueprint BEFORE implementation begins.
+   Your job is to find blind spots, not to approve.
+
+   ## Task
+   <refined_task>
+
+   ## Blueprint
+   <summary>
+
+   ## Files to Modify
+   <files_to_modify — each file with its planned change and rationale>
+
+   ## Files to Create
+   <files_to_create — each file with its purpose>
+
+   ## Challenge Directives
+   1. Missing files — are there files that should be changed but aren't listed?
+   2. Unnecessary files — are there files listed that aren't actually needed?
+   3. Pattern violations — does this approach contradict existing codebase conventions?
+   4. Scope gaps — is anything missing from the task requirements? Anything unnecessarily added?
+   5. Implementation risk — what part is most likely to break during implementation?
+   6. Simpler alternative — is there a meaningfully simpler approach?
+
+   > Maintenance note: These directives mirror `agents/review-analyst.md` Internal Mode.
+   > If directives change, update both locations.
+
+   For each finding: state the problem, why it matters, and suggest an alternative.
+   Maximum 8 findings. Skip trivial issues.
+   ```
 
 3. **Execute CLI** (Bash), redirecting output to file to avoid flooding the context window:
    ```bash
@@ -153,13 +186,28 @@ Get a second opinion from an external model before sharing the blueprint with th
    echo "$PROMPT" | <review_cli> <review_cli_flags> > "$REVIEW_FILE" 2>"${REVIEW_FILE%.md}.err"
    echo "Review saved to: $REVIEW_FILE"
    ```
-   Timeout: 120 seconds. On failure/timeout → skip review and proceed to Step 4.
+   Timeout: 120 seconds. On failure/timeout → fall through to step 5 (internal path).
    If the error log is non-empty, note the CLI errors but still attempt to read the output file.
 
 4. **Read review results** with a line limit to keep context concise:
    `Read(REVIEW_FILE, limit=80)`
    If the file exceeds 80 lines, note that the full review is available at the file path.
-   Retain the results to present alongside the blueprint in Step 4 under "External Review".
+
+5. **Dispatch review-analyst agent** (Sonnet subagent):
+   - Input: refined_task, blueprint summary, files_to_modify, files_to_create,
+     relevant_files (from gate), research_findings (from gate)
+   - **If external review succeeded** (steps 2-4): include `review_output` from step 4.
+     Agent enters external mode — verifies each finding against the codebase.
+   - **If no external review** (CLI not configured or failed): omit `review_output`.
+     Agent enters internal mode — generates findings using challenge directives, then self-verifies.
+   - Returns structured digest: accepted/acknowledged/rejected findings
+   - On agent failure → if external review exists, present raw review output under "External Review" as fallback.
+     If no external review, note "Review unavailable" and proceed to Step 4 (Present to User).
+
+6. **Apply digest to blueprint**:
+   - If any ACCEPTED findings exist: update `summary`, `files_to_modify`, or `files_to_create` accordingly.
+     For each change, annotate: "Review reflected: <finding summary>".
+   - If no ACCEPTED findings: blueprint stays unchanged. Note "N findings reviewed, no blueprint changes needed" in the digest.
 
 ### 4. Present to User
 
@@ -167,6 +215,9 @@ Output the blueprint summary in a clear format:
 
 ```
 ## Blueprint Summary
+
+<If any ACCEPTED findings were applied, prepend:>
+**Revised** — external review reflected N items (see Review Digest below)
 
 <Approach and key decisions>
 
@@ -176,11 +227,22 @@ Output the blueprint summary in a clear format:
 ## Files to Create
 - <file path> — <purpose>
 
-## External Review
-<review CLI output, or "Skipped — review CLI not configured">
+## Review Digest
+
+**Reviewer**: <CLI name> or `internal (Claude Code)` | **Findings**: N (A accepted, B acknowledged, C rejected)
+
+### Accepted (blueprint revised)
+- <finding summary> → <what was changed>
+
+### Acknowledged (noted in Risks)
+- <finding summary>
+
+### Rejected
+- <finding summary> — <rejection reason>
 
 ## Risks / Trade-offs
 - <any notable risks>
+- <ACKNOWLEDGED findings from review digest>
 ```
 
 After presenting the blueprint, use `AskUserQuestion` to get the user's decision:

@@ -10,6 +10,7 @@
     "./agents/contrarian.md",
     "./agents/executor.md",
     "./agents/interviewer.md",
-    "./agents/simplifier.md"
+    "./agents/simplifier.md",
+    "./agents/review-analyst.md"
   ]
 }
