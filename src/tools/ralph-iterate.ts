@@ -36,12 +36,13 @@ export function registerRalphIterateTool(server: McpServer) {
       const task = session.tasks.find((t) => t.id === task_id)
       if (!task) return toolError(`Task ${task_id} not found`)
 
-      if (verify_result === 'pass' && !evidence) {
-        return toolError('evidence required when verify_result is "pass". Paste actual test/build output.')
-      }
-
-      if (verify_result === 'pass' && evidence!.length < MIN_EVIDENCE_LENGTH) {
-        return toolError('Evidence too short. Paste actual terminal output.')
+      if (verify_result === 'pass') {
+        if (!evidence) {
+          return toolError('evidence required when verify_result is "pass". Paste actual test/build output.')
+        }
+        if (evidence.length < MIN_EVIDENCE_LENGTH) {
+          return toolError('Evidence too short. Paste actual terminal output.')
+        }
       }
 
       // TDD phase handling

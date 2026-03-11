@@ -161,7 +161,7 @@ After all tasks are processed, run verification inline:
 
 3.5. **Independent criteria verification** — **Only for sessions without stories. Skip if stories exist (Step 5b already verified).**
    Re-derive which tasks need verification from session state (resilient to context compression):
-   - Call `maetdol_tasks` with `{ action: "status", session_id: "<id>" }` to get current task list.
+   - Call `maetdol_tasks` with `{ action: "list", session_id: "<id>" }` to get current task list.
    - For each completed task, check: does `evidence` lack newlines, or are any `criteria_results` still unmet?
    - If no tasks match, skip this step — all evidence was clean.
 

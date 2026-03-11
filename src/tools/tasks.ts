@@ -197,9 +197,10 @@ export function registerTasksTool(server: McpServer) {
 }
 
 function areStoryTasksDone(tasks: TaskItem[], storyId: string): boolean {
-  return tasks
-    .filter((t) => t.story_id === storyId)
-    .every((t) => t.status === 'completed' || t.status === 'skipped')
+  for (const t of tasks) {
+    if (t.story_id === storyId && t.status !== 'completed' && t.status !== 'skipped') return false
+  }
+  return true
 }
 
 function buildResult(session: Session): TasksResult {
@@ -212,7 +213,9 @@ function buildResult(session: Session): TasksResult {
     if (t.status === 'completed' || t.status === 'skipped') completed++
     if (!nextTask && t.status === 'pending') nextTask = t
     totalCriteria += t.acceptance_criteria.length
-    metCriteria += Object.values(t.criteria_results).filter(Boolean).length
+    for (const met of Object.values(t.criteria_results)) {
+      if (met) metCriteria++
+    }
   }
 
   const total = session.tasks.length

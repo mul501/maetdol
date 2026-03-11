@@ -72,15 +72,14 @@ export function registerSessionTool(server: McpServer) {
           }
           if (!session) return toolError('No active session found to resume')
 
-          const resolved = session
           const resumePoint = {
-            phase: resolved.phase,
-            task_id: resolved.current_task_id,
-            iteration: resolved.current_task_id
-              ? resolved.tasks.find((t) => t.id === resolved.current_task_id)?.iterations ?? 0
+            phase: session.phase,
+            task_id: session.current_task_id,
+            iteration: session.current_task_id
+              ? session.tasks.find((t) => t.id === session.current_task_id)?.iterations ?? 0
               : 0,
           }
-          return ok({ session: resolved, is_resumed: true, resume_point: resumePoint })
+          return ok({ session, is_resumed: true, resume_point: resumePoint })
         }
 
         case 'complete': {
