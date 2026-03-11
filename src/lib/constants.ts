@@ -15,6 +15,8 @@ export const MAX_TASK_ITERATIONS = 5
 export const MAX_SESSION_ITERATIONS = 30
 export const STAGNATION_THRESHOLD = 3
 export const OSCILLATION_WINDOW = 4
+export const MIN_EVIDENCE_LENGTH = 20
+export const MAX_VERIFY_ROUNDS = 2
 
 export const AMBIGUITY_WEIGHTS = {
   round1: { goal: 0.30, constraints: 0.20, criteria: 0.20, interaction: 0.15, context: 0.15 },

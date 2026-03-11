@@ -5,7 +5,7 @@ import { TDD_PHASES } from '../types.js'
 import { loadSession, saveSession } from '../lib/storage.js'
 import { ok, toolError } from '../lib/response.js'
 import { redactSecrets } from '../lib/redact.js'
-import { MAX_EVIDENCE_LENGTH, MAX_TASK_ITERATIONS, MAX_SESSION_ITERATIONS, STAGNATION_THRESHOLD, PHASE } from '../lib/constants.js'
+import { MAX_EVIDENCE_LENGTH, MIN_EVIDENCE_LENGTH, MAX_TASK_ITERATIONS, MAX_SESSION_ITERATIONS, STAGNATION_THRESHOLD, PHASE } from '../lib/constants.js'
 import { applyCriteriaMet } from '../lib/validation.js'
 
 export function registerRalphIterateTool(server: McpServer) {
@@ -38,6 +38,10 @@ export function registerRalphIterateTool(server: McpServer) {
 
       if (verify_result === 'pass' && !evidence) {
         return toolError('evidence required when verify_result is "pass". Paste actual test/build output.')
+      }
+
+      if (verify_result === 'pass' && evidence!.length < MIN_EVIDENCE_LENGTH) {
+        return toolError('Evidence too short. Paste actual terminal output.')
       }
 
       // TDD phase handling
@@ -112,6 +116,22 @@ export function registerRalphIterateTool(server: McpServer) {
       const sessionMaxReached = sessionTotal >= MAX_SESSION_ITERATIONS
       const shouldContinue = !taskMaxReached && !sessionMaxReached
 
+      // Evidence warnings (only when passing)
+      const evidenceWarnings: string[] = []
+      if (verify_result === 'pass' && evidence) {
+        if (!evidence.includes('\n')) {
+          evidenceWarnings.push('Evidence has no newlines — may be a summary, not actual output')
+        }
+
+        // Check for unverified criteria after applying criteria_met
+        const unmetCriteria = task.acceptance_criteria.filter((_, idx) => !task.criteria_results[idx])
+        if (unmetCriteria.length > 0) {
+          evidenceWarnings.push(
+            `${unmetCriteria.length} criteria still unverified: ${unmetCriteria.join('; ')}`,
+          )
+        }
+      }
+
       await saveSession(session)
 
       const result: RalphIterateResult = {
@@ -122,6 +142,7 @@ export function registerRalphIterateTool(server: McpServer) {
         session_total_iterations: sessionTotal,
         verify_result: task.verify_result,
         evidence: task.evidence,
+        evidence_warnings: evidenceWarnings,
         tdd_phase: task.tdd_phase,
         tdd_warning: tddWarning,
       }

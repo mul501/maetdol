@@ -100,13 +100,37 @@ Iterate through subtasks one by one. Each task is dispatched to the **executor**
 
 When all tasks in a story complete, the server sets the story status to `ready_for_verify` (awaiting verification).
 
+```
+verify_round = 0
+
+VERIFY_LOOP:
+```
+
 1. For each story with status `ready_for_verify`:
-   - Verify each story-level `acceptance_criteria` one by one.
-   - Call `maetdol_tasks` with `{ action: "verify_story", session_id: "<id>", story_id: "US-001", criteria_met: [0, 1, 2], evidence: "<actual output>" }`.
-2. If story criteria are not fully met:
-   - Create additional tasks to address unmet criteria.
-   - Return to Step 5 to execute them.
-3. Once all stories are verified, proceed to Step 6.
+   - Collect `git diff` for the story's tasks.
+   - Spawn a **verifier** agent (`subagent_type="maetdol:verifier"`, model: Haiku) with:
+     - Story title + `acceptance_criteria`
+     - The collected git diff
+     - Project build/test commands
+   - **Do NOT pass** the executor's evidence, error_history, or implementation plan.
+
+2. If `verifier.overall === "pass"`:
+   - Call `maetdol_tasks` with `{ action: "verify_story", session_id: "<id>", story_id: "US-001", criteria_met: [verified indices], evidence: "<verifier's evidence>" }`.
+   - Proceed to next story.
+
+3. If `verifier.overall === "fail"`:
+   - Increment `verify_round`.
+   - If `verify_round > 2` (MAX_VERIFY_ROUNDS):
+     - Report to user: "Independent verification failed 2 times. UNVERIFIED criteria: [list from verifier]"
+     - Stop and await user decision.
+   - Otherwise:
+     - For each UNVERIFIED criterion, create a remediation task with the verifier's rejection reason in its context.
+     - Call `maetdol_tasks` with `{ action: "decompose", ... }` to register remediation tasks.
+     - Return to Step 5 (ralph loop executes remediation tasks).
+     - When remediation completes, story returns to `ready_for_verify`.
+     - GOTO VERIFY_LOOP.
+
+4. Once all stories are verified, proceed to Step 6.
 
 ### Step 6: Final Verification
 
@@ -134,6 +158,41 @@ After all tasks are processed, run verification inline:
 
    If the agent reports critical/high findings, present them to the user before completing.
    Low/medium findings are noted in the completion summary.
+
+3.5. **Independent criteria verification** — **Only for sessions without stories. Skip if stories exist (Step 5b already verified).**
+   Re-derive which tasks need verification from session state (resilient to context compression):
+   - Call `maetdol_tasks` with `{ action: "status", session_id: "<id>" }` to get current task list.
+   - For each completed task, check: does `evidence` lack newlines, or are any `criteria_results` still unmet?
+   - If no tasks match, skip this step — all evidence was clean.
+
+   ```
+   verify_round = 0
+
+   FINAL_VERIFY_LOOP:
+   ```
+
+   1. Collect acceptance_criteria from tasks that had `evidence_warnings`.
+   2. Spawn a **verifier** agent (`subagent_type="maetdol:verifier"`, model: Haiku) with:
+      - The warned/unverified criteria list
+      - Full `git diff {session_start_ref}`
+      - Project build/test commands
+      - **Do NOT pass** executor's evidence or error_history.
+
+   3. If `verifier.overall === "pass"`:
+      - Verification complete, continue to step 4.
+
+   4. If `verifier.overall === "fail"`:
+      - Increment `verify_round`.
+      - If `verify_round > 2` (MAX_VERIFY_ROUNDS):
+        - Report to user: "Independent verification failed 2 times. UNVERIFIED criteria: [list]"
+        - Stop and await user decision.
+      - Otherwise:
+        - Spawn an **executor** agent with:
+          - UNVERIFIED criteria + verifier's rejection reasons
+          - Relevant files (from diff)
+          - Context: "Verifier rejected for: [reasons]. Fix required."
+        - After executor completes, GOTO FINAL_VERIFY_LOOP.
+
 4. **Regression check** — analyze the same diff captured in step 3 for unintended side effects, broken imports, or files that shouldn't have changed.
 5. **Skipped task assessment** — if any tasks were skipped, assess whether they block the overall goal.
 6. Report findings to the user before completing the session.

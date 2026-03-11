@@ -98,6 +98,7 @@ export interface RalphIterateResult {
   session_total_iterations: number
   verify_result: VerifyResult
   evidence: string | null
+  evidence_warnings: string[]
   tdd_phase: TddPhase | null
   tdd_warning: string | null
 }
