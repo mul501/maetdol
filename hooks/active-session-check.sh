@@ -35,7 +35,7 @@ for file in "$SESSIONS_DIR"/*.json; do
 
   session_id=$(grep -o '"id"[[:space:]]*:[[:space:]]*"[^"]*"' "$file" | head -1 | sed 's/.*"id"[[:space:]]*:[[:space:]]*"//;s/"//')
   task=$(grep -o '"task"[[:space:]]*:[[:space:]]*"[^"]*"' "$file" | head -1 | sed 's/.*"task"[[:space:]]*:[[:space:]]*"//;s/"//')
-  checkpoint=$(grep -o '"checkpoint"[[:space:]]*:[[:space:]]*"[^"]*"' "$file" | head -1 | sed 's/.*"checkpoint"[[:space:]]*:[[:space:]]*"//;s/"//')
+  checkpoint=$(grep -o '"checkpoint"[[:space:]]*:[[:space:]]*"[^"]*"' "$file" | head -1 | sed 's/.*"checkpoint"[[:space:]]*:[[:space:]]*"//;s/"//' || true)
 
   # Count task progress
   total_tasks=$(grep -c '"id"[[:space:]]*:[[:space:]]*[0-9]' "$file" 2>/dev/null || echo "0")

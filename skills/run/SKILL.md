@@ -243,7 +243,9 @@ Include the simplification results in the Step 7 completion output.
 
 1. Read `review_cli` and `review_cli_flags` from `~/.maetdol/config.json`.
    - If not configured → skip to Step 7.
-2. Capture full diff: `git diff {session_start_ref}` (reuse from Step 6.3).
+2. Capture full diff: `git diff {session_start_ref}`.
+   If the diff exceeds 5000 lines, use `git diff --stat {session_start_ref}` instead.
+   (Reuse from Step 6.3 if already captured.)
 3. Compose review prompt:
    ```
    You are reviewing a completed implementation. Focus on bugs, security issues, and missing error handling.

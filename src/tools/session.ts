@@ -99,8 +99,7 @@ export function registerSessionTool(server: McpServer) {
           if (!checkpoint) return toolError('checkpoint is required for save_checkpoint')
           const session = await loadSession(session_id)
           if (!session) return toolError(`Session ${session_id} not found`)
-          session.checkpoint = checkpoint
-          await saveSession(session)
+          await saveSession({ ...session, checkpoint })
           return ok({ checkpoint })
         }
 
