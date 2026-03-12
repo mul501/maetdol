@@ -78,6 +78,7 @@ Ask the user whether to configure an external review model. Used in two places:
    "Choose an external model CLI for blueprint and code review."
    - **Codex** — OpenAI Codex CLI (`codex` command). Prerequisite: `npm i -g @openai/codex` + OpenAI login.
    - **Gemini** — Google Gemini CLI (`gemini` command). Prerequisite: Gemini CLI installed + logged in.
+   - **OpenCode** — OpenCode CLI (`opencode` command). Prerequisite: OpenCode installed + provider configured.
    - **Skip** — No external CLI. Reviews will use an internal Claude Code agent. Can be changed later via `/maetdol-setup`.
 
 2. If "Skip" is selected:
@@ -90,6 +91,7 @@ Ask the user whether to configure an external review model. Used in two places:
    - Failure → show installation instructions:
      - Codex: `npm install -g @openai/codex && codex login`
      - Gemini: Refer to Gemini CLI installation guide.
+     - OpenCode: Refer to OpenCode installation guide (`opencode auth` for provider setup).
    - Output "Re-run `/maetdol-setup` after installation."
    - Do not write to config.json. Proceed to Step 5.
 
@@ -102,6 +104,7 @@ Ask the user whether to configure an external review model. Used in two places:
      Default flags per CLI:
      - codex: `exec --ephemeral --skip-git-repo-check`
      - gemini: `--prompt ""`
+     - opencode: `run`
    - Failure → "CLI is not responding. Check your login status." then skip.
 
 5. **Confirmation message**: "Review CLI `<name>` registered. It will be used in blueprint review and /maetdol-review."
