@@ -152,10 +152,6 @@ export async function clearAllData(): Promise<{ sessions_removed: number }> {
   const files = (await readdir(SESSIONS_DIR)).filter((f) => f.endsWith('.json'))
   const count = files.length
   await rm(BASE_DIR, { recursive: true, force: true })
-  await Promise.all([
-    mkdir(SESSIONS_DIR, { recursive: true }),
-    mkdir(ARCHIVE_DIR, { recursive: true }),
-  ])
   return { sessions_removed: count }
 }
 
