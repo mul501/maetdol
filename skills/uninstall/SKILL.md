@@ -35,6 +35,8 @@ If no sessions exist, display:
 No session data found. ~/.maetdol/ is clean.
 ```
 
+Then skip to **Step 3** (no data to delete, so confirmation is unnecessary).
+
 ### 2. Confirm
 
 Ask the user for confirmation before proceeding. Use AskUserQuestion:
@@ -60,14 +62,7 @@ Display:
 
 Session data is gone. To fully remove the maetdol plugin:
 
-1. Run: `/plugin remove maetdol`
-
-This will:
-- Remove plugin registration from ~/.claude/plugins/installed_plugins.json
-- Delete cached skills, agents, and commands from ~/.claude/plugins/cache/
-- Unregister the MCP server
-
-No manual cleanup needed after that.
+1. `/plugin` → Installed 탭에서 maetdol 제거
 ```
 
 ## Error: MCP server unreachable
@@ -80,5 +75,5 @@ If `maetdol_uninstall` fails (server not running), display:
 The MCP server is not responding. To clean up manually:
 
 1. Delete session data: `rm -rf ~/.maetdol/`
-2. Remove plugin: `/plugin remove maetdol`
+2. `/plugin` → Installed 탭에서 maetdol 제거
 ```
