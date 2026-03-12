@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { listSessions, clearAllData, clearProjectSessions, deleteSession, deleteArchive } from '../lib/storage.js'
+import { clearAllData, clearProjectSessions, deleteSession, deleteArchive, previewAllData } from '../lib/storage.js'
 import { ok, toolError } from '../lib/response.js'
 
 export function registerUninstallTool(server: McpServer) {
@@ -17,8 +17,8 @@ export function registerUninstallTool(server: McpServer) {
     async ({ action, project_id, session_id }) => {
       switch (action) {
         case 'preview': {
-          const sessions = await listSessions(project_id)
-          return ok({ sessions, total: sessions.length })
+          const { sessions, archives, hasConfig, reviewCount } = await previewAllData(project_id)
+          return ok({ sessions, total: sessions.length, archives, hasConfig, reviewCount })
         }
 
         case 'confirm': {

@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir, readdir, rm, rename } from 'node:fs/promises'
+import { readFile, writeFile, mkdir, readdir, rm, rename, access } from 'node:fs/promises'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
 import type { Session, SessionPhase } from '../types.js'
@@ -157,6 +157,63 @@ export async function clearAllData(): Promise<{ sessions_removed: number }> {
     mkdir(ARCHIVE_DIR, { recursive: true }),
   ])
   return { sessions_removed: count }
+}
+
+// ── Preview All Data ─────────────────────────────────────
+
+async function fileExists(path: string): Promise<boolean> {
+  try {
+    await access(path)
+    return true
+  } catch {
+    return false
+  }
+}
+
+export async function previewAllData(projectId?: string): Promise<{
+  sessions: Array<{ id: string; project_id: string; task: string; phase: SessionPhase; created_at: string }>
+  archives: number
+  hasConfig: boolean
+  reviewCount: number
+}> {
+  await dirReady
+
+  // Sessions (inline listSessions logic)
+  const allSessions = await loadAllSessions()
+  const filtered = projectId ? allSessions.filter((s) => s.project_id === projectId) : allSessions
+  const sessions = filtered.map((s) => ({ id: s.id, project_id: s.project_id, task: s.task, phase: s.phase, created_at: s.created_at }))
+
+  const archiveFiles = (await readdir(ARCHIVE_DIR)).filter((f) => f.endsWith('.json'))
+  let archiveCount: number
+  if (projectId) {
+    const matched = await Promise.all(
+      archiveFiles.map(async (file) => {
+        try {
+          const raw = await readFile(join(ARCHIVE_DIR, file), 'utf-8')
+          const { project_id } = JSON.parse(raw) as { project_id?: string }
+          return project_id === projectId
+        } catch {
+          return false
+        }
+      }),
+    )
+    archiveCount = matched.filter(Boolean).length
+  } else {
+    archiveCount = archiveFiles.length
+  }
+
+  const hasConfig = await fileExists(join(BASE_DIR, 'config.json'))
+
+  let reviewCount = 0
+  const reviewsDir = join(BASE_DIR, 'reviews')
+  try {
+    const reviewFiles = await readdir(reviewsDir)
+    reviewCount = reviewFiles.length
+  } catch {
+    // reviews/ doesn't exist
+  }
+
+  return { sessions, archives: archiveCount, hasConfig, reviewCount }
 }
 
 // ── Archive ──────────────────────────────────────────────

@@ -26,16 +26,21 @@ Display the result:
 |----|------|-------|---------|
 | ... | ... | ... | ... |
 
-**Total: N session(s) will be deleted.**
+**Total: N session(s)**
+
+Additional data:
+- Archives: N file(s)
+- Config: config.json (exists / none)
+- Reviews: N file(s)
 ```
 
-If no sessions exist, display:
+If everything is empty (0 sessions, 0 archives, no config, 0 reviews), display:
 
 ```
-No session data found. ~/.maetdol/ is clean.
+No data found. ~/.maetdol/ is clean.
 ```
 
-Then skip to **Step 3** (no data to delete, so confirmation is unnecessary).
+Then skip to **Step 3**.
 
 ### 2. Confirm
 
@@ -45,12 +50,20 @@ Ask the user for confirmation before proceeding. Use AskUserQuestion:
 
 If the user cancels, stop here.
 
-If confirmed, call `maetdol_uninstall` with `{ action: "confirm" }`.
+If confirmed:
+
+1. Call `maetdol_uninstall` with `{ action: "confirm" }`.
+2. Remove the `active-session-check.sh` hook from `~/.claude/settings.json`:
+   - Read `~/.claude/settings.json`
+   - Find and remove any hook entries (in any hook type array) where the command contains `active-session-check.sh`
+   - Write the updated settings back
+   - If the file doesn't exist or has no matching hooks, skip silently
 
 Display the result:
 
 ```
-Deleted N session(s). ~/.maetdol/ removed.
+Deleted N session(s). ~/.maetdol/ cleaned.
+Hook removed from ~/.claude/settings.json.
 ```
 
 ### 3. Plugin removal guide
@@ -60,7 +73,7 @@ Display:
 ```
 ## Complete uninstall
 
-Session data is gone. To fully remove the maetdol plugin:
+Session data and hooks are gone. To fully remove the maetdol plugin:
 
 1. `/plugin` → Installed 탭에서 maetdol 제거
 ```
@@ -75,5 +88,6 @@ If `maetdol_uninstall` fails (server not running), display:
 The MCP server is not responding. To clean up manually:
 
 1. Delete session data: `rm -rf ~/.maetdol/`
-2. `/plugin` → Installed 탭에서 maetdol 제거
+2. Remove `active-session-check.sh` entries from `~/.claude/settings.json`
+3. `/plugin` → Installed 탭에서 maetdol 제거
 ```
