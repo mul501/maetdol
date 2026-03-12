@@ -175,6 +175,7 @@ export async function previewAllData(projectId?: string): Promise<{
   archives: number
   hasConfig: boolean
   reviewCount: number
+  hasHook: boolean
 }> {
   await dirReady
 
@@ -213,7 +214,16 @@ export async function previewAllData(projectId?: string): Promise<{
     // reviews/ doesn't exist
   }
 
-  return { sessions, archives: archiveCount, hasConfig, reviewCount }
+  let hasHook = false
+  try {
+    const settingsPath = join(homedir(), '.claude', 'settings.json')
+    const raw = await readFile(settingsPath, 'utf-8')
+    hasHook = raw.includes('active-session-check.sh')
+  } catch {
+    // settings.json doesn't exist or unreadable
+  }
+
+  return { sessions, archives: archiveCount, hasConfig, reviewCount, hasHook }
 }
 
 // ── Archive ──────────────────────────────────────────────

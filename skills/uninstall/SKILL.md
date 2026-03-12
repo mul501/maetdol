@@ -15,26 +15,7 @@ Triggered by: `/maetdol-uninstall`
 
 Call `maetdol_uninstall` with `{ action: "preview" }`.
 
-Display the result:
-
-```
-# maetdol (맷돌) — Uninstall
-
-## Session data (~/.maetdol/)
-
-| ID | Task | Phase | Created |
-|----|------|-------|---------|
-| ... | ... | ... | ... |
-
-**Total: N session(s)**
-
-Additional data:
-- Archives: N file(s)
-- Config: config.json (exists / none)
-- Reviews: N file(s)
-```
-
-If everything is empty (0 sessions, 0 archives, no config, 0 reviews), display:
+If everything is empty (0 sessions, 0 archives, no config, 0 reviews, `hasHook` is false), display:
 
 ```
 No data found. ~/.maetdol/ is clean.
@@ -42,10 +23,29 @@ No data found. ~/.maetdol/ is clean.
 
 Then skip to **Step 3**.
 
+Otherwise, display the result as a deletion target list. Only show items that exist (count > 0 or present):
+
+```
+# maetdol (맷돌) — Uninstall
+
+## Will be deleted (~/.maetdol/)
+
+- [x] Sessions: N
+
+  | ID | Task | Phase | Created |
+  |----|------|-------|---------|
+  | ... | ... | ... | ... |
+
+- [x] Archives: N
+- [x] Config (config.json)
+- [x] Reviews: N
+- [x] active-session-check hook (~/.claude/settings.json)
+```
+
 ### 2. Confirm
 
 Ask the user for confirmation before proceeding. Use AskUserQuestion:
-- "Delete all session data? This cannot be undone."
+- "Delete all items listed above? This cannot be undone."
 - Options: "Yes, delete" / "Cancel"
 
 If the user cancels, stop here.
