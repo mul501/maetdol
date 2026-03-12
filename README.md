@@ -58,13 +58,11 @@ One command. Maetdol handles the rest — research, requirement clarification, p
 
 ## Sub-commands
 
-The main command handles everything, but you can also run individual phases:
+The main command handles everything, but you can also run these directly:
 
 ```
 /maetdol-setup                              # Verify plugin installation
-/maetdol-gate "Add user authentication"     # Check ambiguity only
-/maetdol-blueprint                          # Design approach for current session
-/maetdol-unstuck                            # Break out of a stuck loop
+/maetdol-review                             # Review code changes using external model CLI
 /maetdol-teardown                           # Remove session data and uninstall
 ```
 

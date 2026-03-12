@@ -152,9 +152,7 @@ maetdol is ready. Available commands:
 | Command | Description |
 |---------|-------------|
 | `/maetdol "task"` | Full pipeline — gate → decompose → ralph → verify |
-| `/maetdol-gate "task"` | Check ambiguity only |
-| `/maetdol-blueprint "task"` | Requirements analysis and architecture blueprint |
-| `/maetdol-unstuck` | Break out of a stuck loop |
 | `/maetdol-review` | Review code changes using external model CLI |
 | `/maetdol-setup` | Re-run this setup |
+| `/maetdol-teardown` | Remove session data and uninstall |
 ```
