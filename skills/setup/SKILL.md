@@ -154,5 +154,5 @@ maetdol is ready. Available commands:
 | `/maetdol "task"` | Full pipeline — gate → decompose → ralph → verify |
 | `/maetdol-review` | Review code changes using external model CLI |
 | `/maetdol-setup` | Re-run this setup |
-| `/maetdol-teardown` | Remove session data and uninstall |
+| `/maetdol-uninstall` | Remove session data and uninstall |
 ```

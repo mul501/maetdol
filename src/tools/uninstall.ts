@@ -3,9 +3,9 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { listSessions, clearAllData, clearProjectSessions, deleteSession } from '../lib/storage.js'
 import { ok, toolError } from '../lib/response.js'
 
-export function registerTeardownTool(server: McpServer) {
+export function registerUninstallTool(server: McpServer) {
   server.registerTool(
-    'maetdol_teardown',
+    'maetdol_uninstall',
     {
       description: 'Preview or delete all maetdol session data (~/.maetdol/)',
       inputSchema: {

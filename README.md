@@ -63,7 +63,7 @@ The main command handles everything, but you can also run these directly:
 ```
 /maetdol-setup                              # Verify plugin installation
 /maetdol-review                             # Review code changes using external model CLI
-/maetdol-teardown                           # Remove session data and uninstall
+/maetdol-uninstall                          # Remove session data and uninstall
 ```
 
 ## Under the Hood

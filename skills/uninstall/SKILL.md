@@ -1,24 +1,24 @@
 ---
-name: maetdol-teardown
+name: maetdol-uninstall
 description: Remove all maetdol session data and guide plugin uninstall
 ---
 
-# Teardown Skill
+# Uninstall Skill
 
 Removes maetdol session data and guides plugin uninstall.
 
-Triggered by: `/maetdol-teardown`
+Triggered by: `/maetdol-uninstall`
 
 ## Flow
 
 ### 1. Preview
 
-Call `maetdol_teardown` with `{ action: "preview" }`.
+Call `maetdol_uninstall` with `{ action: "preview" }`.
 
 Display the result:
 
 ```
-# maetdol (맷돌) — Teardown
+# maetdol (맷돌) — Uninstall
 
 ## Session data (~/.maetdol/)
 
@@ -43,7 +43,7 @@ Ask the user for confirmation before proceeding. Use AskUserQuestion:
 
 If the user cancels, stop here.
 
-If confirmed, call `maetdol_teardown` with `{ action: "confirm" }`.
+If confirmed, call `maetdol_uninstall` with `{ action: "confirm" }`.
 
 Display the result:
 
@@ -72,7 +72,7 @@ No manual cleanup needed after that.
 
 ## Error: MCP server unreachable
 
-If `maetdol_teardown` fails (server not running), display:
+If `maetdol_uninstall` fails (server not running), display:
 
 ```
 ## Manual cleanup
