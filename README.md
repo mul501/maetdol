@@ -46,7 +46,7 @@ It reads the archived session context, scopes the changes, and executes targeted
 
 1. **Add the plugin repository**
    ```
-   /plugin marketplace add https://github.com/mul501/maetdol
+   /plugin marketplace add mul501/maetdol
    ```
 
 2. **Install the plugin**
