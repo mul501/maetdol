@@ -15,7 +15,7 @@ Triggered by: `/maetdol-uninstall`
 
 Call `maetdol_uninstall` with `{ action: "preview" }`.
 
-If everything is empty (0 sessions, 0 archives, no config, 0 reviews, `hasHook` is false), display:
+If everything is empty (0 sessions, 0 archives, no config, `hasHook` is false), display:
 
 ```
 No data found. ~/.maetdol/ is clean.
@@ -38,7 +38,6 @@ Otherwise, display the result as a deletion target list. Only show items that ex
 
 - [x] Archives: N
 - [x] Config (config.json)
-- [x] Reviews: N
 - [x] active-session-check hook (~/.claude/settings.json)
 ```
 

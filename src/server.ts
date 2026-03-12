@@ -7,6 +7,7 @@ import { registerRalphIterateTool } from './tools/ralph-iterate.js'
 import { registerDetectStagnationTool } from './tools/detect-stagnation.js'
 import { registerBlueprintTool } from './tools/blueprint.js'
 import { registerUninstallTool } from './tools/uninstall.js'
+import { registerReviewExecTool } from './tools/review-exec.js'
 
 const server = new McpServer({
   name: 'maetdol',
@@ -20,6 +21,7 @@ registerRalphIterateTool(server)
 registerDetectStagnationTool(server)
 registerBlueprintTool(server)
 registerUninstallTool(server)
+registerReviewExecTool(server)
 
 async function main() {
   const transport = new StdioServerTransport()

@@ -178,36 +178,32 @@ Get a critical second opinion, then verify findings against the codebase. Review
    Maximum 8 findings. Skip trivial issues.
    ```
 
-3. **Execute CLI** (Bash). **CRITICAL: Do NOT use `run_in_background: true`.** Review results must arrive before proceeding — synchronous execution only.
-   Redirect output to file to avoid flooding the context window:
-   ```bash
-   REVIEW_FILE=~/.maetdol/reviews/$(date +%Y%m%d-%H%M%S)-blueprint-review.md
-   mkdir -p ~/.maetdol/reviews
-   echo "$PROMPT" | <review_cli> <review_cli_flags> > "$REVIEW_FILE" 2>"${REVIEW_FILE%.md}.err"
-   echo "Review saved to: $REVIEW_FILE"
-   ```
-   Timeout: 120 seconds. On failure/timeout → fall through to step 5 (internal path).
-   If the error log is non-empty, note the CLI errors but still attempt to read the output file.
+3. **Start external review** (if CLI configured):
+   Call `maetdol_review_exec` with `{ action: "start", session_id: "<session_id>", review_type: "blueprint", prompt: PROMPT }`.
+   On error (no CLI configured) → skip to step 4.
 
-4. **Read review results** with a line limit to keep context concise:
-   `Read(REVIEW_FILE, limit=80)`
-   If the file exceeds 80 lines, note that the full review is available at the file path.
-
-5. **Dispatch review-analyst agent** (Sonnet subagent):
+4. **Dispatch review-analyst agent** (Sonnet subagent) — immediately, do not wait for external CLI:
    - Input: refined_task, blueprint summary, files_to_modify, files_to_create,
      relevant_files (from gate), research_findings (from gate)
-   - **If external review succeeded** (steps 2-4): include `review_output` from step 4.
-     Agent enters external mode — verifies each finding against the codebase.
-   - **If no external review** (CLI not configured or failed): omit `review_output`.
-     Agent enters internal mode — generates findings using challenge directives, then self-verifies.
+   - Omit `review_output` — agent enters internal mode (generates findings using challenge directives, then self-verifies).
    - Returns structured digest: accepted/acknowledged/rejected findings
-   - On agent failure → if external review exists, present raw review output under "External Review" as fallback.
-     If no external review, note "Review unavailable" and proceed to Step 4 (Present to User).
+   - On agent failure → note "Internal review unavailable" and check external.
 
-6. **Apply digest to blueprint**:
-   - If any ACCEPTED findings exist: update `summary`, `files_to_modify`, or `files_to_create` accordingly.
+5. **Check external review** (if started in step 3):
+   Call `maetdol_review_exec` with `{ action: "check", session_id: "<session_id>", review_type: "blueprint" }`.
+   - If completed → read review file: `Read(review_file, limit=80)`.
+   - If not completed → external review skipped (result will be available in session folder later).
+
+6. **Combine results**:
+   - Both available → merge findings. Items found by both get higher confidence. Unique items from each source are included.
+   - Internal only → use internal digest as-is.
+   - External only (internal failed) → present raw external review under "External Review".
+   - Neither → note "Review unavailable" and proceed to Step 4 (Present to User).
+
+7. **Apply combined digest to blueprint**:
+   - If any ACCEPTED findings: update `summary`, `files_to_modify`, or `files_to_create`.
      For each change, annotate: "Review reflected: <finding summary>".
-   - If no ACCEPTED findings: blueprint stays unchanged. Note "N findings reviewed, no blueprint changes needed" in the digest.
+   - If no ACCEPTED findings: note "N findings reviewed, no blueprint changes needed."
 
 ### 4. Present to User
 

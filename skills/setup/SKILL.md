@@ -99,8 +99,9 @@ Ask the user whether to configure an external review model. Used in two places:
    `echo "Say OK" | <cli> <flags>` (timeout 30 seconds)
    - Success → save to config.json:
      ```json
-     { "review_cli": "<name>", "review_cli_flags": "<flags>" }
+     { "review_cli": "<name>", "review_cli_flags": "<flags>", "review_timeout": 1800 }
      ```
+     `review_timeout`: seconds before the external CLI is terminated. Default **1800** (30 minutes). Users can adjust if their CLI needs more or less time.
      Default flags per CLI:
      - codex: `exec --ephemeral --skip-git-repo-check`
      - gemini: `--prompt ""`

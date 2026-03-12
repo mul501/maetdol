@@ -259,18 +259,17 @@ Include the simplification results in the Step 7 completion output.
    For each finding: state the problem, severity (critical/high/medium), and suggested fix.
    Maximum 10 findings. Skip style and formatting issues.
    ```
-4. **CRITICAL: Do NOT use `run_in_background: true`.** Execute synchronously:
-   ```bash
-   REVIEW_FILE=~/.maetdol/reviews/$(date +%Y%m%d-%H%M%S)-final-review.md
-   mkdir -p ~/.maetdol/reviews
-   echo "$PROMPT" | <review_cli> <review_cli_flags> > "$REVIEW_FILE" 2>"${REVIEW_FILE%.md}.err"
-   ```
-   Timeout: 180 seconds. On failure/timeout → skip to Step 7.
-5. Read results: `Read(REVIEW_FILE, limit=80)`.
-6. For actionable issues (bugs, security, missing error handling):
+4. **Start external review** via `maetdol_review_exec` with `{ action: "start", session_id: "<session_id>", review_type: "final", prompt: PROMPT }`.
+   On error → skip to Step 7.
+5. **Run internal review in parallel**: Spawn a `superpowers:code-reviewer` agent with the same diff and task context. Focus on bugs, security, and missing error handling. Maximum 10 findings.
+6. **Check external review**: Call `maetdol_review_exec` with `{ action: "check", session_id: "<session_id>", review_type: "final" }`.
+   - If completed → read review file: `Read(review_file, limit=80)`.
+   - Combine external + internal findings.
+   - If not completed → use internal results only.
+7. For actionable issues (bugs, security, missing error handling):
    - Apply fixes directly.
    - Re-run tests to confirm no regression.
-7. Include review findings and any fixes in the Step 7 completion summary.
+8. Include combined review findings and any fixes in the Step 7 completion summary.
 
 ### Step 7: Complete Session
 

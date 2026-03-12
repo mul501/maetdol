@@ -17,8 +17,8 @@ export function registerUninstallTool(server: McpServer) {
     async ({ action, project_id, session_id }) => {
       switch (action) {
         case 'preview': {
-          const { sessions, archives, hasConfig, reviewCount, hasHook } = await previewAllData(project_id)
-          return ok({ sessions, total: sessions.length, archives, hasConfig, reviewCount, hasHook })
+          const { sessions, archives, hasConfig, hasHook } = await previewAllData(project_id)
+          return ok({ sessions, total: sessions.length, archives, hasConfig, hasHook })
         }
 
         case 'confirm': {

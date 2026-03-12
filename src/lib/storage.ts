@@ -1,17 +1,58 @@
 import { readFile, writeFile, mkdir, readdir, rm, rename, access } from 'node:fs/promises'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
+import type { Dirent } from 'node:fs'
 import type { Session, SessionPhase } from '../types.js'
 import { PHASE, MAX_ARCHIVE_PER_PROJECT } from './constants.js'
 
-const BASE_DIR = join(homedir(), '.maetdol')
-const SESSIONS_DIR = join(BASE_DIR, 'sessions')
+export const BASE_DIR = join(homedir(), '.maetdol')
+export const SESSIONS_DIR = join(BASE_DIR, 'sessions')
 const ARCHIVE_DIR = join(BASE_DIR, 'archive')
 
 const dirReady = Promise.all([
   mkdir(SESSIONS_DIR, { recursive: true }),
   mkdir(ARCHIVE_DIR, { recursive: true }),
 ])
+
+// ── Path Helpers ────────────────────────────────────────
+
+function sessionDir(id: string): string {
+  return join(SESSIONS_DIR, id)
+}
+
+function sessionFile(id: string): string {
+  return join(SESSIONS_DIR, id, 'session.json')
+}
+
+function archiveDir(id: string): string {
+  return join(ARCHIVE_DIR, id)
+}
+
+function archiveFile(id: string): string {
+  return join(ARCHIVE_DIR, id, 'session.json')
+}
+
+function resolveEntryPath(baseDir: string, entry: Dirent): string | null {
+  if (entry.isDirectory()) return join(baseDir, entry.name, 'session.json')
+  if (entry.name.endsWith('.json')) return join(baseDir, entry.name)
+  return null
+}
+
+async function deleteWithLegacyFallback(dirPath: string, legacyPath: string): Promise<boolean> {
+  try {
+    await rm(dirPath, { recursive: true })
+    return true
+  } catch {
+    try {
+      await rm(legacyPath)
+      return true
+    } catch {
+      return false
+    }
+  }
+}
+
+// ── Migration Helpers ───────────────────────────────────
 
 function migrateStringKeysToNumber(record: Record<string | number, boolean>): Record<number, boolean> {
   const result: Record<number, boolean> = {}
@@ -59,46 +100,46 @@ function normalizeSession(raw: unknown): Session {
   return session
 }
 
+// ── Session CRUD ────────────────────────────────────────
+
 export async function deleteSession(id: string): Promise<boolean> {
   await dirReady
-  const path = join(SESSIONS_DIR, `${id}.json`)
-  try {
-    await rm(path)
-    return true
-  } catch {
-    return false
-  }
+  return deleteWithLegacyFallback(sessionDir(id), join(SESSIONS_DIR, `${id}.json`))
 }
 
 export async function loadSession(id: string): Promise<Session | null> {
   await dirReady
-  const path = join(SESSIONS_DIR, `${id}.json`)
-  try {
-    const raw = await readFile(path, 'utf-8')
-    return normalizeSession(JSON.parse(raw))
-  } catch (err: unknown) {
-    if (err instanceof Error && 'code' in err && (err as NodeJS.ErrnoException).code === 'ENOENT') return null
-    throw err
+  for (const path of [sessionFile(id), join(SESSIONS_DIR, `${id}.json`)]) {
+    try {
+      const raw = await readFile(path, 'utf-8')
+      return normalizeSession(JSON.parse(raw))
+    } catch (err: unknown) {
+      if (err instanceof Error && 'code' in err && (err as NodeJS.ErrnoException).code === 'ENOENT') continue
+      throw err
+    }
   }
+  return null
 }
 
 export async function saveSession(session: Session): Promise<void> {
   await dirReady
-  const path = join(SESSIONS_DIR, `${session.id}.json`)
+  await mkdir(sessionDir(session.id), { recursive: true })
   const toWrite = { ...session, updated_at: new Date().toISOString() }
-  await writeFile(path, JSON.stringify(toWrite, null, 2), 'utf-8')
+  await writeFile(sessionFile(session.id), JSON.stringify(toWrite, null, 2), 'utf-8')
 }
 
 async function loadAllSessions(): Promise<Session[]> {
   await dirReady
-  const files = (await readdir(SESSIONS_DIR)).filter((f) => f.endsWith('.json'))
+  const entries = await readdir(SESSIONS_DIR, { withFileTypes: true })
   const sessions = await Promise.all(
-    files.map(async (file) => {
+    entries.map(async (entry) => {
       try {
-        const raw = await readFile(join(SESSIONS_DIR, file), 'utf-8')
+        const filePath = resolveEntryPath(SESSIONS_DIR, entry)
+        if (!filePath) return null
+        const raw = await readFile(filePath, 'utf-8')
         return normalizeSession(JSON.parse(raw))
       } catch (err) {
-        console.error(`maetdol: skipping corrupt session file ${file}:`, err instanceof Error ? err.message : err)
+        console.error(`maetdol: skipping corrupt session ${entry.name}:`, err instanceof Error ? err.message : err)
         return null
       }
     }),
@@ -128,18 +169,21 @@ export async function listSessions(projectId?: string): Promise<
 
 export async function clearProjectSessions(projectId: string): Promise<{ sessions_removed: number }> {
   await dirReady
-  const files = (await readdir(SESSIONS_DIR)).filter((f) => f.endsWith('.json'))
+  const entries = await readdir(SESSIONS_DIR, { withFileTypes: true })
   const results = await Promise.all(
-    files.map(async (file) => {
+    entries.map(async (entry) => {
       try {
-        const raw = await readFile(join(SESSIONS_DIR, file), 'utf-8')
+        const filePath = resolveEntryPath(SESSIONS_DIR, entry)
+        if (!filePath) return false
+        const raw = await readFile(filePath, 'utf-8')
         const { project_id } = JSON.parse(raw) as { project_id?: string }
         if (project_id === projectId) {
-          await rm(join(SESSIONS_DIR, file), { force: true })
+          const removePath = entry.isDirectory() ? sessionDir(entry.name) : filePath
+          await rm(removePath, { recursive: true, force: true })
           return true
         }
       } catch (err) {
-        console.error(`maetdol: skipping corrupt session file ${file}:`, err instanceof Error ? err.message : err)
+        console.error(`maetdol: skipping corrupt session ${entry.name}:`, err instanceof Error ? err.message : err)
       }
       return false
     }),
@@ -149,8 +193,8 @@ export async function clearProjectSessions(projectId: string): Promise<{ session
 
 export async function clearAllData(): Promise<{ sessions_removed: number }> {
   await dirReady
-  const files = (await readdir(SESSIONS_DIR)).filter((f) => f.endsWith('.json'))
-  const count = files.length
+  const entries = await readdir(SESSIONS_DIR, { withFileTypes: true })
+  const count = entries.filter((e) => e.isDirectory() || e.name.endsWith('.json')).length
   await rm(BASE_DIR, { recursive: true, force: true })
   return { sessions_removed: count }
 }
@@ -170,23 +214,23 @@ export async function previewAllData(projectId?: string): Promise<{
   sessions: Array<{ id: string; project_id: string; task: string; phase: SessionPhase; created_at: string }>
   archives: number
   hasConfig: boolean
-  reviewCount: number
   hasHook: boolean
 }> {
   await dirReady
 
-  // Sessions (inline listSessions logic)
   const allSessions = await loadAllSessions()
   const filtered = projectId ? allSessions.filter((s) => s.project_id === projectId) : allSessions
   const sessions = filtered.map((s) => ({ id: s.id, project_id: s.project_id, task: s.task, phase: s.phase, created_at: s.created_at }))
 
-  const archiveFiles = (await readdir(ARCHIVE_DIR)).filter((f) => f.endsWith('.json'))
+  const archiveEntries = await readdir(ARCHIVE_DIR, { withFileTypes: true })
   let archiveCount: number
   if (projectId) {
     const matched = await Promise.all(
-      archiveFiles.map(async (file) => {
+      archiveEntries.map(async (entry) => {
         try {
-          const raw = await readFile(join(ARCHIVE_DIR, file), 'utf-8')
+          const filePath = resolveEntryPath(ARCHIVE_DIR, entry)
+          if (!filePath) return false
+          const raw = await readFile(filePath, 'utf-8')
           const { project_id } = JSON.parse(raw) as { project_id?: string }
           return project_id === projectId
         } catch {
@@ -196,19 +240,10 @@ export async function previewAllData(projectId?: string): Promise<{
     )
     archiveCount = matched.filter(Boolean).length
   } else {
-    archiveCount = archiveFiles.length
+    archiveCount = archiveEntries.filter((e) => e.isDirectory() || e.name.endsWith('.json')).length
   }
 
   const hasConfig = await fileExists(join(BASE_DIR, 'config.json'))
-
-  let reviewCount = 0
-  const reviewsDir = join(BASE_DIR, 'reviews')
-  try {
-    const reviewFiles = await readdir(reviewsDir)
-    reviewCount = reviewFiles.length
-  } catch {
-    // reviews/ doesn't exist
-  }
 
   let hasHook = false
   try {
@@ -219,35 +254,41 @@ export async function previewAllData(projectId?: string): Promise<{
     // settings.json doesn't exist or unreadable
   }
 
-  return { sessions, archives: archiveCount, hasConfig, reviewCount, hasHook }
+  return { sessions, archives: archiveCount, hasConfig, hasHook }
 }
 
 // ── Archive ──────────────────────────────────────────────
 
 export async function archiveSession(session: Session): Promise<void> {
   await dirReady
-  const src = join(SESSIONS_DIR, `${session.id}.json`)
-  const dest = join(ARCHIVE_DIR, `${session.id}.json`)
+  const src = sessionDir(session.id)
+  const dest = archiveDir(session.id)
   try {
     await rename(src, dest)
   } catch {
-    // Source already deleted or missing — write directly to archive
+    // rename failed (cross-device, legacy flat file, or source missing)
+    try { await rm(join(SESSIONS_DIR, `${session.id}.json`), { force: true }) } catch { /* ignore */ }
+    await mkdir(dest, { recursive: true })
     const toWrite = { ...session, updated_at: new Date().toISOString() }
-    await writeFile(dest, JSON.stringify(toWrite, null, 2), 'utf-8')
+    await writeFile(archiveFile(session.id), JSON.stringify(toWrite, null, 2), 'utf-8')
+    // Clean up source directory if it still exists
+    try { await rm(src, { recursive: true, force: true }) } catch { /* ignore */ }
   }
   await pruneArchives(session.project_id)
 }
 
 export async function loadArchives(projectId: string): Promise<Session[]> {
   await dirReady
-  const files = (await readdir(ARCHIVE_DIR)).filter((f) => f.endsWith('.json'))
+  const entries = await readdir(ARCHIVE_DIR, { withFileTypes: true })
   const all = await Promise.all(
-    files.map(async (file) => {
+    entries.map(async (entry) => {
       try {
-        const raw = await readFile(join(ARCHIVE_DIR, file), 'utf-8')
+        const filePath = resolveEntryPath(ARCHIVE_DIR, entry)
+        if (!filePath) return null
+        const raw = await readFile(filePath, 'utf-8')
         return normalizeSession(JSON.parse(raw))
       } catch (err) {
-        console.error(`maetdol: skipping corrupt archive file ${file}:`, err instanceof Error ? err.message : err)
+        console.error(`maetdol: skipping corrupt archive ${entry.name}:`, err instanceof Error ? err.message : err)
         return null
       }
     }),
@@ -262,17 +303,11 @@ async function pruneArchives(projectId: string): Promise<void> {
   if (archives.length <= MAX_ARCHIVE_PER_PROJECT) return
   const toDelete = archives.slice(MAX_ARCHIVE_PER_PROJECT)
   for (const session of toDelete) {
-    await rm(join(ARCHIVE_DIR, `${session.id}.json`), { force: true })
+    await deleteWithLegacyFallback(archiveDir(session.id), join(ARCHIVE_DIR, `${session.id}.json`))
   }
 }
 
 export async function deleteArchive(id: string): Promise<boolean> {
   await dirReady
-  const path = join(ARCHIVE_DIR, `${id}.json`)
-  try {
-    await rm(path)
-    return true
-  } catch {
-    return false
-  }
+  return deleteWithLegacyFallback(archiveDir(id), join(ARCHIVE_DIR, `${id}.json`))
 }

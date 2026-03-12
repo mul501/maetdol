@@ -51,7 +51,7 @@ Research happens inside the gate phase (before first scoring), not in blueprint.
 
 The `blueprint` phase is optional — simple/clear tasks can skip it. The `stories` phase is optional — only for complex tasks with 3+ subtasks. Simple tasks skip directly from gate to decompose. Story verification happens automatically as task groups complete.
 
-Sessions persist to `~/.maetdol/sessions/{id}.json` and survive context compression and process restarts. Each session has a `checkpoint` field updated at milestones — after compression, the `UserPromptSubmit` hook detects active sessions and the run skill uses `checkpoint` to resume at the exact sub-step, not just the phase start.
+Sessions persist to `~/.maetdol/sessions/{id}/session.json` and survive context compression and process restarts. Review files (blueprint-review.md, code-review.md, final-review.md) are stored alongside session.json in the same directory. Each session has a `checkpoint` field updated at milestones — after compression, the `UserPromptSubmit` hook detects active sessions and the run skill uses `checkpoint` to resume at the exact sub-step, not just the phase start.
 
 ## Code Patterns
 
@@ -85,6 +85,7 @@ State is generally immutable (spread-copy in `session.ts:86`, `storage.ts:26`). 
 | `MAX_MONGDOL_SESSION_ITERATIONS` | 10 | `constants.ts` | mongdol session-wide safety net. |
 | `MAX_POLISH_ITEMS` | 5 | `constants.ts` | mongdol 최대 폴리싱 항목. 5개 초과 시 maetdol 사용 권장. |
 | `MAX_ARCHIVE_PER_PROJECT` | 5 | `constants.ts` | 프로젝트당 최근 아카이브 보관 수. 초과 시 oldest 자동 삭제. |
+| `DEFAULT_REVIEW_TIMEOUT` | 1800 | `constants.ts` | 외부 리뷰 CLI 타임아웃(초). config.json `review_timeout`으로 오버라이드 가능. |
 
 ## Model Selection
 
@@ -103,9 +104,10 @@ The interviewer agent (skill-side) inherits the caller's model. The contrarian a
 - **`dist/` commit rule**: When `src/` or `package.json` dependencies change, always run `npm run build` and commit `dist/server.js` together. Marketplace users have no `node_modules/` — they run `node dist/server.js` directly. Source/bundle mismatch breaks user environments.
 - **Review CLI is registered in setup**: No auto-detection. `/maetdol-setup` asks the user, verifies, and saves to config.json.
 - **Plan review is graceful**: Silently skips the review step if no external CLI is registered. Does not break the blueprint workflow.
-- **Session archive**: `session complete` moves sessions to `~/.maetdol/archive/{id}.json` instead of deleting. Keeps the last 5 per project (by `created_at`). Mongdol uses archives to understand what was originally done. `uninstall confirm` (full) deletes archives too.
+- **Session archive**: `session complete` moves the session directory (`~/.maetdol/sessions/{id}/`) to `~/.maetdol/archive/{id}/` — review files are archived alongside session.json. Keeps the last 5 per project (by `created_at`). Mongdol uses archives to understand what was originally done. `uninstall confirm` (full) deletes archives too.
 - **Session type field**: `session.type` is `'maetdol'` (default) or `'mongdol'`. `findActiveSession` filters by type — maetdol and mongdol sessions coexist independently. Mongdol sessions start at `phase: decompose` (skip gate/blueprint).
 - **Checkpoint field**: `session.checkpoint` (string | null, max 200 chars) records sub-step progress within a phase. Format examples: `ralph:task3/5:done`, `verify:tests_passed`. Saved via `maetdol_session save_checkpoint`. The run skill saves checkpoints at each milestone; after context compression, it reads the checkpoint to resume at the exact sub-step rather than replaying the entire phase.
 - **Active session hook**: `hooks/active-session-check.sh` is a `UserPromptSubmit` hook registered by `/maetdol-setup` (Step 4.7). It computes project_id from git remote/cwd, scans `~/.maetdol/sessions/` for matching execution-phase sessions (`ralph`, `decompose`, `verify`, `stories`), and outputs a reminder with session ID, checkpoint, and resume instructions. Gate/blueprint sessions are excluded (user is already interacting).
-- **Step 6.6 — Final External Review**: After simplification (Step 6.5), if an external review CLI is configured, the run skill sends the full diff for review, applies actionable fixes, and re-runs tests. Uses synchronous execution (never `run_in_background`). Distinct from Step 6.3 (internal code-reviewer agent for plan alignment) — Step 6.6 uses an external model for a fresh perspective on bugs and security.
+- **Step 6.6 — Final External Review**: After simplification (Step 6.5), if an external review CLI is configured, the run skill starts the external CLI via `maetdol_review_exec` (background) while running an internal code-reviewer agent in parallel. Results are combined. Distinct from Step 6.3 (internal code-reviewer agent for plan alignment) — Step 6.6 uses an external model for a fresh perspective on bugs and security.
+- **`maetdol_review_exec` tool**: Server-side process management for external review CLIs. Spawns the CLI as a detached process group, pipes the prompt to stdin, redirects stdout+stderr to the session directory. Supports `start` (spawn + timer) and `check` (poll status + read preview). Timeout kills the entire process group to prevent orphans.
 - **Independent verification**: The verifier agent (`agents/verifier.md`, Haiku) independently checks acceptance criteria without seeing the executor's evidence. Server-side evidence quality checks (`MIN_EVIDENCE_LENGTH`, newline check, unmet criteria warning) run on every `ralph_iterate` pass and populate `evidence_warnings` in the result. The run skill uses `evidence_warnings` to decide whether independent verification is needed — clean tasks (no warnings) skip it. Story verification (Step 5b) always uses the verifier. Final verification (Step 6, step 3.5) only triggers for non-story sessions with warned tasks. Max 2 rejection rounds before escalating to the user.

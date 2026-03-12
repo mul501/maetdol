@@ -17,8 +17,12 @@ else
   project_id=$(printf '%s' "$PWD" | shasum -a 256 | cut -c1-8)
 fi
 
+# Collect session files: directory-based first, then legacy flat files
+shopt -s nullglob
+files=("$SESSIONS_DIR"/*/session.json "$SESSIONS_DIR"/*.json)
+
 # Scan session files for matching project_id in execution phases
-for file in "$SESSIONS_DIR"/*.json; do
+for file in "${files[@]}"; do
   [[ -f "$file" ]] || continue
 
   # Extract fields with lightweight parsing (no jq dependency)
