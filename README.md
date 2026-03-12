@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="assets/maetdol-mascot.jpg" alt="maetdol mascot" width="240" />
+  <img src="assets/maetmong.png" alt="maetdol and mongdol mascots" width="420" />
 </p>
 
 # maetdol (맷돌)
 
-A Claude Code plugin that grinds your tasks from research to working code — one command, start to finish.
+A Claude Code plugin that grinds your tasks from research to working code — and polishes the result.
 
 ## The Problem
 
@@ -31,6 +31,16 @@ One command. Maetdol handles the rest — research, requirement clarification, p
 2. **Blueprint** — Designs the approach and gets your approval before writing any code.
 3. **Execute** — Works through subtasks in verify-fix loops. When stuck, shifts perspective and retries.
 4. **Verify** — Runs tests, reviews the output, and reports what was done.
+
+### After Completion
+
+Need tweaks? **Mongdol** (몽돌, "smooth pebble") polishes the result:
+
+```
+/mongdol "Tighten error messages and add input validation"
+```
+
+It reads the archived session context, scopes the changes, and executes targeted fixes — no re-gating, no re-planning.
 
 ## Getting Started
 
@@ -61,6 +71,7 @@ One command. Maetdol handles the rest — research, requirement clarification, p
 The main command handles everything, but you can also run these directly:
 
 ```
+/mongdol "description"                      # Polish completed work — targeted adjustments
 /maetdol-setup                              # Verify plugin installation
 /maetdol-review                             # Review code changes using external model CLI
 /maetdol-uninstall                          # Remove session data and uninstall

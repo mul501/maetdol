@@ -1,7 +1,7 @@
 {
   "name": "maetdol",
   "version": "0.1.0",
-  "description": "Claude Code productivity plugin — gate, decompose, loop, unstuck",
+  "description": "Claude Code productivity plugin — gate, decompose, loop, unstuck, polish",
   "type": "module",
   "main": "dist/server.js",
   "scripts": {
