@@ -1,6 +1,7 @@
 ---
 name: maetdol-blueprint
 description: Requirements analysis and architecture blueprint for a maetdol session
+user-invocable: false
 ---
 
 # Blueprint Skill

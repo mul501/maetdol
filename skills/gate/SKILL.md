@@ -1,6 +1,7 @@
 ---
 name: maetdol-gate
 description: Check task ambiguity and refine requirements through socratic questioning
+user-invocable: false
 ---
 
 # Gate Skill

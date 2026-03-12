@@ -1,6 +1,7 @@
 ---
 name: maetdol-run
 description: Execute maetdol pipeline from current phase through completion
+user-invocable: false
 ---
 
 # Run Skill

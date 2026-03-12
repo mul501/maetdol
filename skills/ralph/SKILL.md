@@ -1,6 +1,7 @@
 ---
 name: maetdol-ralph
 description: Iterative verify-fix-verify loop with stagnation detection
+user-invocable: false
 ---
 
 # Ralph Skill

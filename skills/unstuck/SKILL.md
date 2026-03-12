@@ -1,6 +1,7 @@
 ---
 name: maetdol-unstuck
 description: Detect stagnation patterns and suggest alternative approaches
+user-invocable: false
 ---
 
 # Unstuck Skill
