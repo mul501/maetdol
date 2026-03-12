@@ -68,6 +68,9 @@ export interface Session {
   unstuck: { activations: number; personas_used: string[] }
   created_at: string
   updated_at: string
+  type?: 'maetdol' | 'mongdol'
+  git_ref_range?: string
+  scope_files?: string[]
 }
 
 // ── Ambiguity Scoring ────────────────────────────────────

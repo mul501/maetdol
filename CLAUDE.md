@@ -26,6 +26,7 @@ npm run typecheck  # tsc --noEmit
 /maetdol-run       # Execute from current phase through completion
 /maetdol-unstuck   # Break out of a stuck loop
 /maetdol-review    # Review code changes using external model CLI
+/mongdol "desc"    # Post-completion polishing — targeted adjustments
 ```
 
 ## Architecture
@@ -42,7 +43,9 @@ All three layers are bundled in this repo. Skills live in `skills/`, agents in `
 
 ### Session lifecycle
 
-`gate`(research→score→interview→walkthrough) → [`blueprint`(design + optional deep research) + `plan-review`] → [`stories`] → `decompose` → `ralph` → [`story verify`] → `verify` → [`simplify`] → [`external review`] → `completed`
+**maetdol**: `gate`(research→score→interview→walkthrough) → [`blueprint`(design + optional deep research) + `plan-review`] → [`stories`] → `decompose` → `ralph` → [`story verify`] → `verify` → [`simplify`] → [`external review`] → `completed`
+
+**mongdol** (polishing): `decompose` → `ralph` → `verify` → `completed` (gate/blueprint 스킵, tight iteration caps)
 
 Research happens inside the gate phase (before first scoring), not in blueprint. Blueprint receives `research_findings` from the gate and only does additional deep research when gate findings are insufficient (e.g., API-level detail).
 
@@ -78,6 +81,10 @@ State is generally immutable (spread-copy in `session.ts:86`, `storage.ts:26`). 
 | `MAX_SESSION_ITERATIONS` | 30 | `ralph-iterate.ts` | Session-wide safety net. Prevents runaway sessions across many small tasks. |
 | `STAGNATION_THRESHOLD` | 3 | `ralph-iterate.ts` | Consecutive identical errors before flagging stagnation. 2 could be coincidence; 3 is a pattern. |
 | `BLUEPRINT_SKIP_THRESHOLD` | 0.15 | `constants.ts` | Blueprint 스킵 기준. 매우 명확한 태스크(< 0.15)이고 관련 파일 2개 이하면 아키텍처 설계 생략. |
+| `MAX_POLISH_ITERATIONS` | 3 | `constants.ts` | mongdol per-task retry cap. 폴리싱은 3회면 충분. |
+| `MAX_MONGDOL_SESSION_ITERATIONS` | 10 | `constants.ts` | mongdol session-wide safety net. |
+| `MAX_POLISH_ITEMS` | 5 | `constants.ts` | mongdol 최대 폴리싱 항목. 5개 초과 시 maetdol 사용 권장. |
+| `MAX_ARCHIVE_PER_PROJECT` | 5 | `constants.ts` | 프로젝트당 최근 아카이브 보관 수. 초과 시 oldest 자동 삭제. |
 
 ## Model Selection
 
@@ -96,7 +103,8 @@ The interviewer agent (skill-side) inherits the caller's model. The contrarian a
 - **`dist/` commit rule**: When `src/` or `package.json` dependencies change, always run `npm run build` and commit `dist/server.js` together. Marketplace users have no `node_modules/` — they run `node dist/server.js` directly. Source/bundle mismatch breaks user environments.
 - **Review CLI is registered in setup**: No auto-detection. `/maetdol-setup` asks the user, verifies, and saves to config.json.
 - **Plan review is graceful**: Silently skips the review step if no external CLI is registered. Does not break the blueprint workflow.
-- **Completed session cleanup**: `session complete` deletes the session file immediately. Completed sessions are not preserved on disk — the response includes the completed session object but the file is already gone. `uninstall confirm` with `session_id` can delete individual in-progress sessions.
+- **Session archive**: `session complete` moves sessions to `~/.maetdol/archive/{id}.json` instead of deleting. Keeps the last 5 per project (by `created_at`). Mongdol uses archives to understand what was originally done. `uninstall confirm` (full) deletes archives too.
+- **Session type field**: `session.type` is `'maetdol'` (default) or `'mongdol'`. `findActiveSession` filters by type — maetdol and mongdol sessions coexist independently. Mongdol sessions start at `phase: decompose` (skip gate/blueprint).
 - **Checkpoint field**: `session.checkpoint` (string | null, max 200 chars) records sub-step progress within a phase. Format examples: `ralph:task3/5:done`, `verify:tests_passed`. Saved via `maetdol_session save_checkpoint`. The run skill saves checkpoints at each milestone; after context compression, it reads the checkpoint to resume at the exact sub-step rather than replaying the entire phase.
 - **Active session hook**: `hooks/active-session-check.sh` is a `UserPromptSubmit` hook registered by `/maetdol-setup` (Step 4.7). It computes project_id from git remote/cwd, scans `~/.maetdol/sessions/` for matching execution-phase sessions (`ralph`, `decompose`, `verify`, `stories`), and outputs a reminder with session ID, checkpoint, and resume instructions. Gate/blueprint sessions are excluded (user is already interacting).
 - **Step 6.6 — Final External Review**: After simplification (Step 6.5), if an external review CLI is configured, the run skill sends the full diff for review, applies actionable fixes, and re-runs tests. Uses synchronous execution (never `run_in_background`). Distinct from Step 6.3 (internal code-reviewer agent for plan alignment) — Step 6.6 uses an external model for a fresh perspective on bugs and security.

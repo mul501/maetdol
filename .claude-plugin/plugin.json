@@ -11,6 +11,7 @@
     "./agents/executor.md",
     "./agents/interviewer.md",
     "./agents/simplifier.md",
+    "./agents/polisher.md",
     "./agents/review-analyst.md",
     "./agents/verifier.md"
   ]

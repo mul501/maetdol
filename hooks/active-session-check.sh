@@ -36,19 +36,29 @@ for file in "$SESSIONS_DIR"/*.json; do
   session_id=$(grep -o '"id"[[:space:]]*:[[:space:]]*"[^"]*"' "$file" | head -1 | sed 's/.*"id"[[:space:]]*:[[:space:]]*"//;s/"//')
   task=$(grep -o '"task"[[:space:]]*:[[:space:]]*"[^"]*"' "$file" | head -1 | sed 's/.*"task"[[:space:]]*:[[:space:]]*"//;s/"//')
   checkpoint=$(grep -o '"checkpoint"[[:space:]]*:[[:space:]]*"[^"]*"' "$file" | head -1 | sed 's/.*"checkpoint"[[:space:]]*:[[:space:]]*"//;s/"//' || true)
+  session_type=$(grep -o '"type"[[:space:]]*:[[:space:]]*"[^"]*"' "$file" | head -1 | sed 's/.*"type"[[:space:]]*:[[:space:]]*"//;s/"//' || true)
 
   # Count task progress
   total_tasks=$(grep -c '"id"[[:space:]]*:[[:space:]]*[0-9]' "$file" 2>/dev/null || echo "0")
   completed_tasks=$(grep -c '"status"[[:space:]]*:[[:space:]]*"completed"' "$file" 2>/dev/null || echo "0")
 
+  # Determine label and resume command based on session type
+  if [[ "$session_type" == "mongdol" ]]; then
+    label="mongdol"
+    resume_cmd="/mongdol"
+  else
+    label="maetdol"
+    resume_cmd="/maetdol-run"
+  fi
+
   # Output reminder
-  echo "[maetdol] Active session detected"
+  echo "[$label] Active session detected"
   echo "Session: $session_id | Phase: $phase | Progress: $completed_tasks/$total_tasks tasks"
   if [[ -n "$checkpoint" ]]; then
     echo "Checkpoint: $checkpoint"
   fi
   echo "Task: ${task:0:80}..."
-  echo "Resume with: /maetdol-run"
+  echo "Resume with: $resume_cmd"
 
   # Only report the first matching session
   exit 0

@@ -23,9 +23,12 @@ export function registerRalphIterateTool(server: McpServer) {
         evidence: z.string().max(MAX_EVIDENCE_LENGTH).optional().describe('Verification evidence (actual terminal output). Required when verify_result is "pass"'),
         criteria_met: z.array(z.number()).optional().describe('Indices of acceptance_criteria verified this iteration'),
         tdd_phase: z.enum(TDD_PHASES).optional().describe('Current TDD phase for testable tasks: red, green, or refactor'),
+        max_task_iterations: z.number().int().min(1).optional().describe('Override per-task iteration cap (default: 5)'),
+        max_session_iterations: z.number().int().min(1).optional().describe('Override session-wide iteration cap (default: 30)'),
+        stagnation_threshold: z.number().int().min(1).optional().describe('Override consecutive-error threshold (default: 3)'),
       },
     },
-    async ({ session_id, task_id, error_hash, error_summary, verify_result, evidence, criteria_met, tdd_phase }) => {
+    async ({ session_id, task_id, error_hash, error_summary, verify_result, evidence, criteria_met, tdd_phase, max_task_iterations, max_session_iterations, stagnation_threshold }) => {
       const session = await loadSession(session_id)
       if (!session) return toolError(`Session ${session_id} not found`)
 
@@ -111,10 +114,15 @@ export function registerRalphIterateTool(server: McpServer) {
       // Calculate total session iterations
       const sessionTotal = session.tasks.reduce((sum, t) => sum + t.iterations, 0)
 
+      // Apply overrides or defaults
+      const taskMax = max_task_iterations ?? MAX_TASK_ITERATIONS
+      const sessionMax = max_session_iterations ?? MAX_SESSION_ITERATIONS
+      const stagnationThresh = stagnation_threshold ?? STAGNATION_THRESHOLD
+
       // Determine if we should continue
-      const stagnationDetected = consecutiveSame >= STAGNATION_THRESHOLD
-      const taskMaxReached = task.iterations >= MAX_TASK_ITERATIONS
-      const sessionMaxReached = sessionTotal >= MAX_SESSION_ITERATIONS
+      const stagnationDetected = consecutiveSame >= stagnationThresh
+      const taskMaxReached = task.iterations >= taskMax
+      const sessionMaxReached = sessionTotal >= sessionMax
       const shouldContinue = !taskMaxReached && !sessionMaxReached
 
       // Evidence warnings (only when passing)

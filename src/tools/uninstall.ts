@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { listSessions, clearAllData, clearProjectSessions, deleteSession } from '../lib/storage.js'
+import { listSessions, clearAllData, clearProjectSessions, deleteSession, deleteArchive } from '../lib/storage.js'
 import { ok, toolError } from '../lib/response.js'
 
 export function registerUninstallTool(server: McpServer) {
@@ -24,7 +24,11 @@ export function registerUninstallTool(server: McpServer) {
         case 'confirm': {
           if (session_id) {
             const deleted = await deleteSession(session_id)
-            if (!deleted) return toolError(`Session ${session_id} not found`)
+            if (!deleted) {
+              const deletedArchive = await deleteArchive(session_id)
+              if (!deletedArchive) return toolError(`Session ${session_id} not found`)
+              return ok({ archive_removed: session_id })
+            }
             return ok({ session_removed: session_id })
           }
           const result = project_id

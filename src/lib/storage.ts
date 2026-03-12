@@ -1,13 +1,17 @@
-import { readFile, writeFile, mkdir, readdir, rm } from 'node:fs/promises'
+import { readFile, writeFile, mkdir, readdir, rm, rename } from 'node:fs/promises'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
 import type { Session, SessionPhase } from '../types.js'
-import { PHASE } from './constants.js'
+import { PHASE, MAX_ARCHIVE_PER_PROJECT } from './constants.js'
 
 const BASE_DIR = join(homedir(), '.maetdol')
 const SESSIONS_DIR = join(BASE_DIR, 'sessions')
+const ARCHIVE_DIR = join(BASE_DIR, 'archive')
 
-const dirReady = mkdir(SESSIONS_DIR, { recursive: true })
+const dirReady = Promise.all([
+  mkdir(SESSIONS_DIR, { recursive: true }),
+  mkdir(ARCHIVE_DIR, { recursive: true }),
+])
 
 function migrateStringKeysToNumber(record: Record<string | number, boolean>): Record<number, boolean> {
   const result: Record<number, boolean> = {}
@@ -30,6 +34,7 @@ function normalizeSession(raw: unknown): Session {
   session.checkpoint ??= null
   session.blueprint ??= null
   session.stories ??= []
+  session.type ??= 'maetdol'
 
   for (const story of session.stories) {
     story.acceptance_criteria ??= []
@@ -101,9 +106,16 @@ async function loadAllSessions(): Promise<Session[]> {
   return sessions.filter((s): s is Session => s !== null)
 }
 
-export async function findActiveSession(projectId: string): Promise<Session | null> {
+export async function findActiveSession(
+  projectId: string,
+  type?: 'maetdol' | 'mongdol',
+): Promise<Session | null> {
   const sessions = await loadAllSessions()
-  return sessions.find((s) => s.project_id === projectId && s.phase !== PHASE.completed) ?? null
+  return sessions.find((s) =>
+    s.project_id === projectId &&
+    s.phase !== PHASE.completed &&
+    (type ? (s.type ?? 'maetdol') === type : true),
+  ) ?? null
 }
 
 export async function listSessions(projectId?: string): Promise<
@@ -140,6 +152,64 @@ export async function clearAllData(): Promise<{ sessions_removed: number }> {
   const files = (await readdir(SESSIONS_DIR)).filter((f) => f.endsWith('.json'))
   const count = files.length
   await rm(BASE_DIR, { recursive: true, force: true })
-  await mkdir(SESSIONS_DIR, { recursive: true })
+  await Promise.all([
+    mkdir(SESSIONS_DIR, { recursive: true }),
+    mkdir(ARCHIVE_DIR, { recursive: true }),
+  ])
   return { sessions_removed: count }
+}
+
+// ── Archive ──────────────────────────────────────────────
+
+export async function archiveSession(session: Session): Promise<void> {
+  await dirReady
+  const src = join(SESSIONS_DIR, `${session.id}.json`)
+  const dest = join(ARCHIVE_DIR, `${session.id}.json`)
+  try {
+    await rename(src, dest)
+  } catch {
+    // Source already deleted or missing — write directly to archive
+    const toWrite = { ...session, updated_at: new Date().toISOString() }
+    await writeFile(dest, JSON.stringify(toWrite, null, 2), 'utf-8')
+  }
+  await pruneArchives(session.project_id)
+}
+
+export async function loadArchives(projectId: string): Promise<Session[]> {
+  await dirReady
+  const files = (await readdir(ARCHIVE_DIR)).filter((f) => f.endsWith('.json'))
+  const all = await Promise.all(
+    files.map(async (file) => {
+      try {
+        const raw = await readFile(join(ARCHIVE_DIR, file), 'utf-8')
+        return normalizeSession(JSON.parse(raw))
+      } catch (err) {
+        console.error(`maetdol: skipping corrupt archive file ${file}:`, err instanceof Error ? err.message : err)
+        return null
+      }
+    }),
+  )
+  return all
+    .filter((s): s is Session => s !== null && s.project_id === projectId)
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+}
+
+async function pruneArchives(projectId: string): Promise<void> {
+  const archives = await loadArchives(projectId)
+  if (archives.length <= MAX_ARCHIVE_PER_PROJECT) return
+  const toDelete = archives.slice(MAX_ARCHIVE_PER_PROJECT)
+  for (const session of toDelete) {
+    await rm(join(ARCHIVE_DIR, `${session.id}.json`), { force: true })
+  }
+}
+
+export async function deleteArchive(id: string): Promise<boolean> {
+  await dirReady
+  const path = join(ARCHIVE_DIR, `${id}.json`)
+  try {
+    await rm(path)
+    return true
+  } catch {
+    return false
+  }
 }

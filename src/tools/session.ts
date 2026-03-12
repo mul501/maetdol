@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { randomUUID } from 'node:crypto'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { Session } from '../types.js'
-import { loadSession, saveSession, findActiveSession, deleteSession } from '../lib/storage.js'
+import { loadSession, saveSession, findActiveSession, archiveSession, loadArchives } from '../lib/storage.js'
 import { shortHash } from '../lib/hash.js'
 import { ok, toolError } from '../lib/response.js'
 import { PHASE } from '../lib/constants.js'
@@ -11,31 +11,35 @@ export function registerSessionTool(server: McpServer) {
   server.registerTool(
     'maetdol_session',
     {
-      description: 'Session lifecycle: create, get, resume, complete, or save_checkpoint',
+      description: 'Session lifecycle: create, get, resume, complete, save_checkpoint, or list_archives',
       inputSchema: {
-        action: z.enum(['create', 'get', 'resume', 'complete', 'save_checkpoint']),
+        action: z.enum(['create', 'get', 'resume', 'complete', 'save_checkpoint', 'list_archives']),
         session_id: z.string().optional(),
         task: z.string().optional(),
         project_id: z.string().optional(),
         checkpoint: z.string().max(200).optional(),
+        type: z.enum(['maetdol', 'mongdol']).optional(),
+        git_ref_range: z.string().optional(),
+        scope_files: z.array(z.string()).optional(),
       },
     },
-    async ({ action, session_id, task, project_id, checkpoint }) => {
+    async ({ action, session_id, task, project_id, checkpoint, type, git_ref_range, scope_files }) => {
       switch (action) {
         case 'create': {
           if (!task) {
             return toolError('task is required for create')
           }
           const projectId = project_id ?? shortHash(task)
+          const sessionType = type ?? 'maetdol'
 
-          // Check for existing active session
-          const existing = await findActiveSession(projectId)
+          // Check for existing active session of the same type
+          const existing = await findActiveSession(projectId, sessionType)
           if (existing) {
             return ok({
               session: existing,
               is_resumed: false,
               resume_point: null,
-              suggestion: `Active session ${existing.id} found. Use action:"resume" with session_id:"${existing.id}" to continue.`,
+              suggestion: `Active ${sessionType} session ${existing.id} found. Use action:"resume" with session_id:"${existing.id}" to continue.`,
             })
           }
 
@@ -43,7 +47,7 @@ export function registerSessionTool(server: McpServer) {
             id: randomUUID().slice(0, 12),
             project_id: projectId,
             task,
-            phase: PHASE.gate,
+            phase: sessionType === 'mongdol' ? PHASE.decompose : PHASE.gate,
             gate: null,
             blueprint: null,
             stories: [],
@@ -53,6 +57,9 @@ export function registerSessionTool(server: McpServer) {
             unstuck: { activations: 0, personas_used: [] },
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
+            type: sessionType,
+            git_ref_range,
+            scope_files,
           }
           await saveSession(session)
           return ok({ session, is_resumed: false, resume_point: null })
@@ -70,7 +77,7 @@ export function registerSessionTool(server: McpServer) {
           if (session_id) {
             session = await loadSession(session_id)
           } else if (project_id) {
-            session = await findActiveSession(project_id)
+            session = await findActiveSession(project_id, type)
           }
           if (!session) return toolError('No active session found to resume')
 
@@ -89,8 +96,8 @@ export function registerSessionTool(server: McpServer) {
           if (!session_id) return toolError('session_id is required for complete')
           const session = await loadSession(session_id)
           if (!session) return toolError(`Session ${session_id} not found`)
-          await deleteSession(session_id)
           const completed: Session = { ...session, phase: PHASE.completed }
+          await archiveSession(completed)
           return ok({ session: completed, is_resumed: false, resume_point: null })
         }
 
@@ -101,6 +108,27 @@ export function registerSessionTool(server: McpServer) {
           if (!session) return toolError(`Session ${session_id} not found`)
           await saveSession({ ...session, checkpoint })
           return ok({ checkpoint })
+        }
+
+        case 'list_archives': {
+          if (!project_id) return toolError('project_id is required for list_archives')
+          const archives = await loadArchives(project_id)
+          return ok({
+            archives: archives.map((s) => ({
+              id: s.id,
+              task: s.task,
+              type: s.type ?? 'maetdol',
+              tasks: s.tasks.map((t) => ({
+                title: t.title,
+                acceptance_criteria: t.acceptance_criteria,
+                verify_result: t.verify_result,
+                story_id: t.story_id,
+              })),
+              relevant_files: s.gate?.relevant_files ?? [],
+              refined_task: s.gate?.refined_task ?? s.task,
+              created_at: s.created_at,
+            })),
+          })
         }
 
         default: {
