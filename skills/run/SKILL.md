@@ -189,8 +189,8 @@ After all tasks are processed, run verification inline:
 3.5. **Independent criteria verification** — **Only for sessions without stories. Skip if stories exist (Step 5b already verified).**
    Re-derive which tasks need verification from session state (resilient to context compression):
    - Call `maetdol_tasks` with `{ action: "list", session_id: "<id>" }` to get current task list.
-   - For each completed task, check: does `evidence` lack newlines, or are any `criteria_results` still unmet?
-   - If no tasks match, skip this step — all evidence was clean.
+   - For each completed task, check: does it have non-empty `acceptance_criteria`?
+   - If no tasks have acceptance criteria, skip this step.
 
    ```
    verify_round = 0
@@ -198,7 +198,7 @@ After all tasks are processed, run verification inline:
    FINAL_VERIFY_LOOP:
    ```
 
-   1. Collect acceptance_criteria from tasks that had `evidence_warnings`.
+   1. Collect acceptance_criteria from completed tasks that have non-empty `acceptance_criteria`.
    2. Spawn a **verifier** agent (`subagent_type="maetdol:verifier"`, model: Haiku) with:
       - The warned/unverified criteria list
       - Full `git diff {session_start_ref}`
@@ -267,10 +267,11 @@ Include the simplification results in the Step 7 completion output.
 4. **Start external review** via `maetdol_review_exec` with `{ action: "start", session_id: "<session_id>", review_type: "final", prompt: PROMPT }`.
    On error → skip to Step 7.
 5. **Run internal review in parallel**: Spawn a `superpowers:code-reviewer` agent with the same diff and task context. Focus on bugs, security, and missing error handling. Maximum 10 findings.
-6. **Check external review**: Call `maetdol_review_exec` with `{ action: "check", session_id: "<session_id>", review_type: "final" }`.
-   - If completed → read review file: `Read(review_file)`.
-   - Combine external + internal findings.
-   - If not completed → use internal results only.
+6. **Await external review**: Call `maetdol_review_exec` with `{ action: "check", session_id: "<session_id>", review_type: "final" }`.
+   - `status: "completed"` → read review file: `Read(review_file)`. Combine external + internal findings.
+   - `status: "not_started"` → external review was not started or config missing. Use internal results only.
+   - `status: "in_progress"` → poll: wait 30 seconds (`sleep 30`), then check again.
+     Repeat until completed. The server's `DEFAULT_REVIEW_TIMEOUT` (default 30 minutes) is the only timeout — when the server kills the process, the next check returns `status: "completed"` (with `exit_code: -1`), ending the loop naturally. Do NOT add a skill-level timeout.
 7. For actionable issues (bugs, security, missing error handling):
    - Apply fixes directly.
    - Re-run tests to confirm no regression.

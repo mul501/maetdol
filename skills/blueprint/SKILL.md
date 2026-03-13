@@ -194,10 +194,12 @@ Get a critical second opinion, then verify findings against the codebase. Review
    - Returns structured digest: accepted/acknowledged/rejected findings
    - On agent failure → note "Internal review unavailable" and check external.
 
-5. **Check external review** (if started in step 3):
+5. **Await external review** (if started in step 3):
    Call `maetdol_review_exec` with `{ action: "check", session_id: "<session_id>", review_type: "blueprint" }`.
-   - If completed → read review file: `Read(review_file)`.
-   - If not completed → external review skipped (result will be available in session folder later).
+   - `status: "completed"` → read review file: `Read(review_file)`. Done.
+   - `status: "not_started"` → skip (review was not started or config missing).
+   - `status: "in_progress"` → poll: wait 30 seconds (`sleep 30`), then check again.
+     Repeat until completed. The server's `DEFAULT_REVIEW_TIMEOUT` (default 30 minutes) is the only timeout — when the server kills the process, the next check returns `status: "completed"` (with `exit_code: -1`), ending the loop naturally. Do NOT add a skill-level timeout.
 
 6. **Combine results**:
    - Both available → merge findings. Items found by both get higher confidence. Unique items from each source are included.

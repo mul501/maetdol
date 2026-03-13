@@ -152,6 +152,7 @@ export function registerReviewExecTool(server: McpServer) {
                 content = result.content
               }
               return ok({
+                status: 'completed',
                 completed: true,
                 review_file: reviewFile,
                 exit_code: null,
@@ -159,7 +160,7 @@ export function registerReviewExecTool(server: McpServer) {
                 filtered: result.filtered,
               })
             } catch {
-              return ok({ completed: false, review_file: reviewFile, not_started: true })
+              return ok({ status: 'not_started', completed: false, review_file: reviewFile })
             }
           }
 
@@ -183,6 +184,7 @@ export function registerReviewExecTool(server: McpServer) {
             runningReviews.delete(key)
 
             return ok({
+              status: 'completed',
               completed: true,
               review_file: reviewFile,
               exit_code: review.exitCode,
@@ -192,6 +194,7 @@ export function registerReviewExecTool(server: McpServer) {
           }
 
           return ok({
+            status: 'in_progress',
             completed: false,
             review_file: reviewFile,
           })

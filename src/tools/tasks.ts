@@ -97,6 +97,22 @@ export function registerTasksTool(server: McpServer) {
           const task = session.tasks.find((t) => t.id === task_id)
           if (!task) return toolError(`Task ${task_id} not found`)
 
+          // Gate: tasks with acceptance criteria require passing verification + all criteria met
+          if (status === 'completed' && task.acceptance_criteria.length > 0) {
+            if (task.verify_result !== 'pass') {
+              return toolError(
+                `Cannot complete task ${task_id}: no passing verification recorded. ` +
+                `Call maetdol_ralph_iterate with verify_result: "pass" and evidence first.`
+              )
+            }
+            if (task.acceptance_criteria.some((_, idx) => !task.criteria_results[idx])) {
+              return toolError(
+                `Cannot complete task ${task_id}: acceptance criteria unmet. ` +
+                `Use maetdol_ralph_iterate with criteria_met to verify criteria first.`
+              )
+            }
+          }
+
           task.status = status
           if (status === 'in_progress') {
             session.current_task_id = task_id

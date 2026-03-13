@@ -95,6 +95,12 @@ When done, report your result clearly:
 - **Task skipped** (not applicable or blocked): `{ outcome: "skipped", summary: "<reason>" }`
 - **Stagnation** (max iterations or unresolvable): `{ outcome: "stagnation", summary: "<what was tried, what failed>" }`
 
+## Server Completion Gate
+
+**Important**: The server rejects `status: "completed"` on tasks with acceptance criteria
+unless ALL criteria are met (via `criteria_met`) AND a `verify_result: "pass"` has been recorded.
+Always verify all criteria before declaring completion.
+
 ## Anti-Patterns
 
 - Never modify tests to make them pass (unless the tests themselves are buggy).
