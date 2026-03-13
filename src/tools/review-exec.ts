@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { spawn } from 'node:child_process'
 import { createWriteStream } from 'node:fs'
-import { readFile, mkdir } from 'node:fs/promises'
+import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ChildProcess } from 'node:child_process'
@@ -15,9 +15,24 @@ interface RunningReview {
   timer: NodeJS.Timeout
   completed: boolean
   exitCode: number | null
+  filtered?: boolean
 }
 
 const runningReviews = new Map<string, RunningReview>()
+
+const REVIEW_START_MARKER = '## Review Findings'
+const REVIEW_END_MARKER = '## End Review'
+
+function filterReviewContent(content: string): { filtered: boolean; content: string } {
+  const startIdx = content.lastIndexOf(REVIEW_START_MARKER)
+  if (startIdx === -1) return { filtered: false, content }
+
+  const endIdx = content.indexOf(REVIEW_END_MARKER, startIdx)
+  if (endIdx === -1) return { filtered: false, content }
+
+  const extracted = content.slice(startIdx, endIdx + REVIEW_END_MARKER.length).trim()
+  return { filtered: true, content: extracted }
+}
 
 function reviewKey(sessionId: string, reviewType: string): string {
   return `${sessionId}:${reviewType}`
@@ -130,12 +145,18 @@ export function registerReviewExecTool(server: McpServer) {
 
           if (!review) {
             try {
-              const content = await readFile(reviewFile, 'utf-8')
+              let content = await readFile(reviewFile, 'utf-8')
+              const result = filterReviewContent(content)
+              if (result.filtered) {
+                await writeFile(reviewFile, result.content, 'utf-8')
+                content = result.content
+              }
               return ok({
                 completed: true,
                 review_file: reviewFile,
                 exit_code: null,
                 content_preview: content.slice(0, 500),
+                filtered: result.filtered,
               })
             } catch {
               return ok({ completed: false, review_file: reviewFile, not_started: true })
@@ -144,8 +165,18 @@ export function registerReviewExecTool(server: McpServer) {
 
           if (review.completed) {
             let contentPreview: string | undefined
+            let filtered = review.filtered ?? false
             try {
-              const content = await readFile(reviewFile, 'utf-8')
+              let content = await readFile(reviewFile, 'utf-8')
+              if (!review.filtered) {
+                const result = filterReviewContent(content)
+                if (result.filtered) {
+                  await writeFile(reviewFile, result.content, 'utf-8')
+                  content = result.content
+                }
+                filtered = result.filtered
+                review.filtered = filtered
+              }
               contentPreview = content.slice(0, 500)
             } catch { /* file may be empty */ }
 
@@ -156,6 +187,7 @@ export function registerReviewExecTool(server: McpServer) {
               review_file: reviewFile,
               exit_code: review.exitCode,
               content_preview: contentPreview,
+              filtered,
             })
           }
 

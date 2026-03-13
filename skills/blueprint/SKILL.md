@@ -176,6 +176,11 @@ Get a critical second opinion, then verify findings against the codebase. Review
 
    For each finding: state the problem, why it matters, and suggest an alternative.
    Maximum 8 findings. Skip trivial issues.
+
+   ## Output Format
+   Begin your response with "## Review Findings" on its own line.
+   End your response with "## End Review" on its own line.
+   Include ONLY your findings between these markers — no preamble, no summary, no metadata.
    ```
 
 3. **Start external review** (if CLI configured):
@@ -191,7 +196,7 @@ Get a critical second opinion, then verify findings against the codebase. Review
 
 5. **Check external review** (if started in step 3):
    Call `maetdol_review_exec` with `{ action: "check", session_id: "<session_id>", review_type: "blueprint" }`.
-   - If completed → read review file: `Read(review_file, limit=80)`.
+   - If completed → read review file: `Read(review_file)`.
    - If not completed → external review skipped (result will be available in session folder later).
 
 6. **Combine results**:

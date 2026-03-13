@@ -258,12 +258,17 @@ Include the simplification results in the Step 7 completion output.
 
    For each finding: state the problem, severity (critical/high/medium), and suggested fix.
    Maximum 10 findings. Skip style and formatting issues.
+
+   ## Output Format
+   Begin your response with "## Review Findings" on its own line.
+   End your response with "## End Review" on its own line.
+   Include ONLY your findings between these markers — no preamble, no summary, no metadata.
    ```
 4. **Start external review** via `maetdol_review_exec` with `{ action: "start", session_id: "<session_id>", review_type: "final", prompt: PROMPT }`.
    On error → skip to Step 7.
 5. **Run internal review in parallel**: Spawn a `superpowers:code-reviewer` agent with the same diff and task context. Focus on bugs, security, and missing error handling. Maximum 10 findings.
 6. **Check external review**: Call `maetdol_review_exec` with `{ action: "check", session_id: "<session_id>", review_type: "final" }`.
-   - If completed → read review file: `Read(review_file, limit=80)`.
+   - If completed → read review file: `Read(review_file)`.
    - Combine external + internal findings.
    - If not completed → use internal results only.
 7. For actionable issues (bugs, security, missing error handling):

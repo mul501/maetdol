@@ -38,6 +38,13 @@ When review CLI is configured:
 
 1. Compose review prompt — include review focus areas:
    - Bugs, security vulnerabilities, error handling, breaking changes, style consistency
+   - Append output format instructions to the prompt:
+     ```
+     ## Output Format
+     Begin your response with "## Review Findings" on its own line.
+     End your response with "## End Review" on its own line.
+     Include ONLY your findings between these markers — no preamble, no summary, no metadata.
+     ```
 2. **Determine review file path**:
    - If an active maetdol/mongdol session exists (check `maetdol_session` with `{ action: "resume", project_id }`) → use `maetdol_review_exec` with `{ action: "start", session_id, review_type: "code", prompt: PROMPT }`. Review saves to `~/.maetdol/sessions/<session_id>/code-review.md`.
    - If no active session → execute via Bash:
@@ -49,7 +56,7 @@ When review CLI is configured:
      Timeout: 120 seconds. Fall back to inline review on failure/timeout (including CLI not found).
 3. **Run inline review in parallel**: Spawn a `superpowers:code-reviewer` agent (Step 5) immediately — do not wait for external CLI.
 4. **Check external review** (if `maetdol_review_exec` was used): Call `maetdol_review_exec` with `{ action: "check", session_id, review_type: "code" }`.
-   - If completed → read review file: `Read(review_file, limit=80)`.
+   - If completed → read review file: `Read(review_file)`.
    - If not completed → use inline results only.
    - Combine external + inline findings for Step 6.
 
